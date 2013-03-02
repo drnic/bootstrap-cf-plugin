@@ -1,0 +1,543 @@
+---
+name: <%= find("name") %>
+director_uuid: <%= find("director_uuid") %>
+
+release:
+  name: <%= find("release.name") %>
+  version: <%= find("release.version") %>
+
+compilation:
+  workers: 3
+  network: default
+  reuse_compilation_vms: true
+  cloud_properties:
+    instance_type: c1.medium
+    availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
+
+update:
+  canaries: 1
+  canary_watch_time: 30000-600000
+  update_watch_time: 30000-600000
+  max_in_flight: 4
+  max_errors: 1
+
+networks:
+- name: default
+  type: manual
+  subnets:
+  - range: 10.10.1.0/24
+    name: default_unused
+    reserved:
+    - 10.10.1.2 - 10.10.1.9
+    static:
+    - 10.10.1.10 - 10.10.1.30
+    gateway: 10.10.1.1
+    dns:
+    - 10.10.0.2  # amazon has only 1 DNS server for the whole VPC at x.x.0.2
+    cloud_properties:
+      security_groups:
+      <%- find('networks.default.subnets.default_unused.cloud_properties.security_groups').each do |sec_group| -%>
+      - <%= sec_group %>
+      <%- end -%>
+      subnet: <%= find('properties.template_only.aws.subnet_id') %>
+
+- name: vip_network
+  type: vip
+  # Fake network properties to satisfy bosh diff
+  subnets:
+  - range: 127.0.99.0/24
+    gateway: 127.0.99.1
+    dns:
+    - 127.0.99.250
+  cloud_properties:
+    security_groups:
+    <%- find('networks.vip_network.cloud_properties.security_groups').each do |sec_group| -%>
+    - <%= sec_group %>
+    <%- end -%>
+
+
+resource_pools:
+- name: common
+  network: default
+  size: 13
+  stemcell:
+    name: bosh-stemcell
+    version: latest
+  cloud_properties:
+    instance_type: m1.small
+    availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
+- name: smallfast 
+  network: default
+  size: 1
+  stemcell:
+    name: bosh-stemcell
+    version: latest
+  cloud_properties:
+    instance_type: c1.medium
+    availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
+- name: router
+  network: default
+  size: 1
+  stemcell:
+    name: bosh-stemcell
+    version: latest
+  cloud_properties:
+    instance_type: m1.small
+    availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
+    elbs:
+    - cfrouter
+
+jobs:
+- name: debian_nfs_server
+  template: debian_nfs_server
+  instances: 1
+  resource_pool: common
+  persistent_disk: 8192
+  properties:
+    debian_nfs_server:
+      no_root_squash: true
+  networks:
+  - name: default
+    static_ips:
+    - <%= ip( 0, 'default.static') %>
+
+- name: services_nfs
+  template: debian_nfs_server
+  instances: 1
+  resource_pool: common
+  persistent_disk: 8192
+  properties:
+    debian_nfs_server:
+      no_root_squash: true
+  networks:
+  - name: default
+    static_ips:
+    - <%= ip( 1, 'default.static') %>
+
+- name: syslog_aggregator
+  template: syslog_aggregator
+  instances: 1
+  resource_pool: common
+  persistent_disk: 100000
+  networks:
+  - name: default
+    static_ips:
+    - <%= ip( 2, 'default.static') %>
+
+- name: nats
+  template: nats
+  instances: 1
+  resource_pool: common
+  networks:
+  - name: default
+    static_ips:
+    - <%= ip( 3, 'default.static') %>
+
+- name: postgres
+  template: postgres
+  instances: 1
+  resource_pool: common
+  networks:
+  - name: default
+    static_ips:
+    - <%= ip( 4, 'default.static') %>
+  persistent_disk: 2048
+  properties:
+    db: uaadb
+
+- name: vcap_redis
+  template: vcap_redis
+  instances: 1
+  resource_pool: common
+  networks:
+  - name: default
+    static_ips:
+    - <%= ip( 5, 'default.static') %>
+
+
+- name: services_redis
+  template: vcap_redis
+  instances: 1
+  resource_pool: common
+  persistent_disk: 1024
+  networks:
+  - name: default
+    static_ips:
+    - <%= ip( 6, 'default.static') %>
+  properties:
+    vcap_redis:
+      port: 3456
+      password: bt3FXngo
+      maxmemory: 2000000000
+      persistence:
+        dir: /var/vcap/store/vcap_redis
+
+- name: uaa
+  template: uaa
+  instances: 1
+  resource_pool: common
+  networks:
+  - name: default
+    static_ips:
+    - <%= ip( 7, 'default.static') %>
+
+
+- name: login
+  template: login
+  instances: 1
+  resource_pool: common
+  networks:
+  - name: default
+
+- name: cloud_controller
+  template: cloud_controller_ng
+  instances: 1
+  resource_pool: common
+  networks:
+  - name: default
+    static_ips:
+    - <%= ip( 8, 'default.static') %>
+  properties:
+    ccdb: ccdb
+
+- name: router
+  template: router
+  instances: 1
+  resource_pool: router
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+    static_ips:
+    - <%= ip( 9, 'default.static') %>
+
+- name:  health_manager
+  template: health_manager_next
+  instances: 1
+  resource_pool: common
+  networks:
+  - name: default
+
+- name: dea_next
+  template: dea_next
+  instances: 1
+  resource_pool: common
+  update:
+    max_in_flight: 8
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+
+- name: service_gateways
+  template:
+  - mysql_gateway
+  - redis_gateway
+  - marketplace_gateway
+  instances: 1
+  resource_pool: common
+  persistent_disk: 7168
+  networks:
+  - name: default
+    static_ips:
+    - <%= ip( 10, 'default.static') %>
+  properties:
+    uaa_client_id: "vmc"
+    uaa_endpoint: http://uaa.<%= find("properties.domain") %>
+    uaa_client_auth_credentials:
+      username: sre@vmware.com
+      password: the_admin_pw
+    mysql_gateway:
+      token: mysql-token
+      cc_api_version: v2
+      check_orphan_interval: 7200
+      supported_versions: ["5.1"]
+      version_aliases:
+        current: "5.1"
+    redis_gateway:
+      token: redis-token
+      cc_api_version: v2
+      default_plan: "100"
+      supported_versions: ["2.6"]
+      version_aliases:
+        current: "2.6"
+    marketplace_gateway:
+      marketplace: appdirect
+      cc_api_version: v2
+      uaa_client_id: "vmc"
+      uaa_endpoint: http://uaa.<%= find("properties.domain") %>
+      uaa_client_auth_credentials:
+        username: sre@vmware.com
+        password: the_admin_pw
+      service_auth_tokens:
+        mongodb_mongolab-dev: ad_mongodb_mongolabdev_token
+        smtp_sendgrid-dev: ad_smtp_sendgriddev_token
+      external_uri: http://appdirect-mpgw.<%= find("properties.domain") %>
+      refresh_interval: 300
+      node_timeout: 15
+      whitelist:
+      - mongodb_mongolab-dev
+      - smtp_sendgrid-dev
+      service_mappings:
+      - cc_name: mongodb
+        cc_provider: mongolab-dev
+        ad_name: mongodb
+        ad_provider: mongolab-dev
+      - cc_name: smtp
+        cc_provider: sendgrid-dev
+        ad_name: smtp
+        ad_provider: sendgrid-dev
+
+      appdirect:
+        endpoint: "https://dev3cloudfoundry.appdirect.com"
+        key: "k"
+        secret: "s"
+
+
+- name: service_nodes
+  template:
+  - redis_node_ng
+  - mysql_node_ng
+  instances: 1
+  resource_pool: smallfast 
+  persistent_disk: 7168
+  networks:
+  - name: default
+    static_ips:
+    - <%= ip( 11, 'default.static') %>
+  properties:
+    plan: "100"
+    redis_node:
+      supported_versions: ["2.6"]
+      default_version: "2.6"
+    mysql_node:
+      available_storage: 2048
+      password: "c1oudc0wc1oudc0w"
+      max_db_size: 256
+      default_version: "5.5"
+      supported_versions: ["5.1"]
+
+properties:
+  template_only:
+    <%= find("properties.template_only").to_yaml.split("\n")[1..-1].map{|line| " " * 4 + line}.join("\n").gsub(/\A\s{4}/, "") %>
+
+  domain: <%= find("properties.domain") %>
+
+  networks:
+    apps: default
+    management: default
+
+  nats:
+    user: nats
+    password: "c1oudc0wc1oudc0w"
+    address: <%= ip( 3, 'default.static') %>
+    port: 4222
+
+  ccdb: &ccdb
+    <%= find("properties.ccdb").to_yaml.split("\n")[1..-1].map{|line| " " * 4 + line}.join("\n").gsub(/\A\s{4}/, "") %>
+
+  ccdb_ng: *ccdb
+
+  uaadb:
+    address: <%= ip( 4, 'default.static') %>
+    port: 2544
+    roles:
+    - tag: admin
+      name: uaa
+      password: "c1oudc0wc1oudc0w"
+    databases:
+    - tag: uaa
+      name: uaa
+
+  cc: &cc
+    srv_api_uri: http://ccng.<%= find("properties.domain") %>
+    external_host: ccng
+    logging_level: debug
+    bulk_api_password: zbTuuLaap44jadlas2l312lk
+    uaa_resource_id: cloud_controller
+    staging_upload_user: zxsfhgjg
+    staging_upload_password: ZNVfdase9
+    resource_pool:
+      minimum_size: 1048576
+      resource_directory_key: <%= find("properties.domain").gsub(".", "-") %>-cc-resources
+      fog_connection:
+        provider: AWS
+        aws_access_key_id: <%= find("properties.template_only.aws.access_key_id") %>
+        aws_secret_access_key: <%= find("properties.template_only.aws.secret_access_key") %>
+    packages:
+      minimum_size: 1048576
+      app_package_directory_key: <%= find("properties.domain").gsub(".", "-") %>-cc-packages
+      fog_connection:
+        provider: AWS
+        aws_access_key_id: <%= find("properties.template_only.aws.access_key_id") %>
+        aws_secret_access_key: <%= find("properties.template_only.aws.secret_access_key") %>
+    droplets:
+      minimum_size: 1048576
+      droplet_directory_key: <%= find("properties.domain").gsub(".", "-") %>-cc-droplets
+      fog_connection:
+        provider: AWS
+        aws_access_key_id: <%= find("properties.template_only.aws.access_key_id") %>
+        aws_secret_access_key: <%= find("properties.template_only.aws.secret_access_key") %>
+    cc_partition: default
+
+  ccng: *cc
+
+  vcap_redis:
+    address: <%= ip( 5, 'default.static') %>
+    port: 3456
+    password: "c1oudc0wc1oudc0w"
+    maxmemory: 500000000
+
+  router:
+    port: 8081
+    status:
+      port: 8080
+      user: sBNUxXlS0pc71wVef
+      password: 7nTmaIf9vPV4mJyBe
+
+  dashboard:
+    uaa:
+      client_id: dashboard
+      client_secret: YsLuKyUCZF53kBKS
+    users:
+    - - b29
+      - admin
+
+  dea:
+    max_memory: 4096
+
+  dea_next:
+    memory_mb: 8192
+    memory_overcommit_factor: 4
+    disk_mb: 16384
+    disk_overcommit_factor: 4
+    num_instances: 256
+
+  nfs_server:
+    address: <%= ip( 0, 'default.static') %>
+    network: 10.10.1.0/24
+
+  service_lifecycle:
+    download_url: service-serialization.<%= find("properties.domain") %>
+    mount_point: /var/vcap/service_lifecycle
+    tmp_dir: /var/vcap/service_lifecycle/tmp_dir
+    resque:
+      host: <%= ip( 6, 'default.static') %>
+      port: 3456
+      password: bt3FXngo
+    nfs_server:
+      address: <%= ip( 1, 'default.static') %>
+      export_dir: /var/vcap/store/shared
+    serialization_data_server:
+    - 0.serialization-data-server.default.<%= find("name") %>.bosh
+
+  service_plans:
+    mysql:
+      "100":
+        description: "Shared service instance, 1MB memory, 10MB storage, 10 connections"
+        job_management:
+          high_water: 900
+          low_water: 100
+        configuration:
+          capacity: 500
+          max_db_size: 10
+          key_buffer: 128
+          innodb_buffer_pool_size: 128
+          max_allowed_packet: 16
+          thread_cache_size: 8
+          query_cache_size: 8
+          max_long_query: 3
+          max_long_tx: 30
+          max_clients: 10
+          max_connections: 100
+          table_open_cache: 200
+          innodb_tables_per_database: 100
+          connection_pool_size:
+            min: 5
+            max: 10
+          backup:
+            # enable: true
+          lifecycle:
+            # enable: true
+            serialization: enable
+            snapshot:
+              quota: 1
+          warden:
+            enable: false
+
+    redis:
+      "100":
+        description: "Dedicated server, shared VM, 20MB memory, 50 connections"
+        free: true
+        job_management:
+          high_water: 410
+          low_water: 40
+        configuration:
+          capacity: 220
+          max_memory: 20
+          memory_overhead: 5
+          max_clients: 50
+          persistent: true
+          backup:
+            enable: true
+          lifecycle:
+            enable: true
+            serialization: enable
+            snapshot:
+              quota: 1
+            worker_count: 5
+
+
+
+  syslog_aggregator:
+    address: <%= ip( 2, 'default.static') %>
+    port: 54321
+
+  stager:
+    max_staging_duration: 120
+    max_active_tasks: 5
+    queues:
+    - staging
+
+  serialization_data_server:
+    upload_token: 8f7COGvTlXT7l8IzAgOHxMXurBrG364k
+    use_nginx: true
+    upload_timeout: 10
+    port: 8080
+    upload_file_expire_time: 600
+    purge_expired_interval: 30
+
+
+  uaa:
+    catalina_opts: -Xmx768m -XX:MaxPermSize=256m
+    url: http://uaa.<%= find("properties.domain") %>
+    resource_id: account_manager
+    client_secret: somesecret
+    token_secret: tokensecret
+    no_ssl: true
+    cc:
+      token_secret: uaa
+      client_secret: "c1oudc0wc1oudc0w"
+    admin:
+      client_secret: MeM5fER8evgEisjj
+    login:
+      client_secret: HZtd2FyZS5jb20iL
+    batch:
+      username: do0H2AKay2jAc
+      password: FSCTiplI5Q83n
+    client:
+      override: true
+      autoapprove:
+        - vmc
+        - my
+        - portal
+        - micro
+        - support-signon
+        - login
+    scim:
+      users:
+      - sre@vmware.com|the_admin_pw|scim.write,scim.read,openid
+      - b29|admin|openid,dashboard.user
+

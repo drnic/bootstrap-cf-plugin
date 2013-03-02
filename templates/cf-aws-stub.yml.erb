@@ -1,0 +1,46 @@
+---
+name: cf-<%= name %>
+director_uuid: <%= director_uuid %>
+release:
+  name: bosh-release 
+  version: latest
+
+# Do not change this property, it will be completely overwritten; 'bosh diff' requires it
+networks:
+- name: default
+  type: manual
+  subnets:
+  - range: 10.10.1.0/24
+    name: default_unused
+    reserved:
+    - 10.10.1.2 - 10.10.1.9
+    static:
+    - 10.10.1.10 - 10.10.1.30
+    gateway: 10.10.1.1
+    dns:
+    - 10.10.0.5
+    cloud_properties:
+      security_groups:
+      - cf
+
+- name: vip_network
+  type: vip
+  cloud_properties:
+    security_groups:
+    - cf
+  # Fake network properties to satisfy bosh diff
+  subnets:
+  - range: 127.0.99.0/24
+    gateway: 127.0.99.1
+    dns:
+    - 127.0.99.250
+
+properties:
+  domain: <%= domain %>
+
+  template_only:
+    aws:
+      access_key_id: <%= aws_access_key_id %>
+      secret_access_key: <%= aws_secret_access_key %>
+      availability_zone: <%= availability_zone %>
+      subnet_id: <%= subnet_id %>
