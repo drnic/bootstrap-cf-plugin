@@ -7,7 +7,7 @@ end
 
 gemspec
 
-group :development do
+group :test do
   gem "rake"
   gem "rspec"
 end
