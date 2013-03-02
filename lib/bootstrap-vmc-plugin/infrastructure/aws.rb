@@ -9,7 +9,8 @@ module BootstrapVmcPlugin
         sh("cd #{cf_release_path} && bosh -n create release && bosh -n upload release")
         sh("cd /tmp && rm -f #{LIGHT_STEMCELL_URL.split("/").last} && wget '#{LIGHT_STEMCELL_URL}'")
         BootstrapVmcPlugin::Generator.new("aws_vpc_receipt.yml", "aws_rds_receipt.yml").save
-        sh("bosh diff #{File.join(File.dirname(__FILE__),'..','..','..','templates','cf-aws-template.yml.erb')}")
+        template_file = File.expand_path(File.join(File.dirname(__FILE__),'..','..','..','templates','cf-aws-template.yml.erb'))
+        sh("bosh diff #{template_file}")
         sh("bosh deployment cf-aws.yml")
         sh("bosh -n deploy")
       end

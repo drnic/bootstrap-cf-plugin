@@ -54,7 +54,8 @@ describe BootstrapVmcPlugin::Infrastructure::Aws do
     end
 
     it 'applies the template to the manifest file with bosh diff' do
-      BootstrapVmcPlugin::Infrastructure::Aws.should_receive(:sh).with("bosh diff #{ENV['HOME']}/workspace/bootstrap-vmc-plugin/lib/bootstrap-vmc-plugin/infrastructure/../../../templates/cf-aws-template.yml.erb")
+      templates_dir = File.expand_path(File.join(File.dirname(__FILE__), '..','..','..','templates'))
+      BootstrapVmcPlugin::Infrastructure::Aws.should_receive(:sh).with("bosh diff #{templates_dir}/cf-aws-template.yml.erb")
     end
 
     it 'sets the bosh deployment' do
