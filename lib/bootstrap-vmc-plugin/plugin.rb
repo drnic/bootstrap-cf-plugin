@@ -1,3 +1,4 @@
+require "bootstrap-vmc-plugin"
 module BootstrapVmcPlugin
   class Plugin < VMC::CLI
     def lookup_infrastructure_class(infrastructure)

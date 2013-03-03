@@ -1,5 +1,6 @@
+require "erb"
 require "vmc"
-require "common/exec"
+require "common/version"
 require "bootstrap-vmc-plugin/generator"
 require "bootstrap-vmc-plugin/plugin"
 require "bootstrap-vmc-plugin/infrastructure/aws"

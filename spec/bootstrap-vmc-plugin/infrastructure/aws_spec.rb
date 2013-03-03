@@ -40,7 +40,7 @@ describe BootstrapVmcPlugin::Infrastructure::Aws do
     end
 
     it 'creates the cf bosh release' do
-      BootstrapVmcPlugin::Infrastructure::Aws.should_receive(:sh).with('cd /tmp/spec-cf-release && bosh -n create release && bosh -n upload release')
+      BootstrapVmcPlugin::Infrastructure::Aws.should_receive(:sh).with('cd /tmp/spec-cf-release && bosh -n create release --force && bosh -n upload release')
     end
 
     it 'downloads the latest stemcell from S3' do
@@ -55,11 +55,11 @@ describe BootstrapVmcPlugin::Infrastructure::Aws do
 
     it 'applies the template to the manifest file with bosh diff' do
       templates_dir = File.expand_path(File.join(File.dirname(__FILE__), '..','..','..','templates'))
-      BootstrapVmcPlugin::Infrastructure::Aws.should_receive(:sh).with("bosh diff #{templates_dir}/cf-aws-template.yml.erb")
+      BootstrapVmcPlugin::Infrastructure::Aws.should_receive(:sh).with("bosh -n diff #{templates_dir}/cf-aws-template.yml.erb")
     end
 
     it 'sets the bosh deployment' do
-      BootstrapVmcPlugin::Infrastructure::Aws.should_receive(:sh).with('bosh deployment cf-aws.yml')
+      BootstrapVmcPlugin::Infrastructure::Aws.should_receive(:sh).with('bosh -n deployment cf-aws.yml')
     end
 
     it 'does the bosh deploy' do
