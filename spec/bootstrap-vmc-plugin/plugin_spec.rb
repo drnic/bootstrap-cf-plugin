@@ -17,8 +17,10 @@ describe BootstrapVmcPlugin::Plugin do
                                   "cc" => {
                                       "srv_api_uri" => "http://example.com"
                                   },
-                                 'uaadb' => {
-                                      'roles' => [ {'tag' => 'admin' ,'name' => 'uaa', 'password' => 'da_password'}]
+                                 'uaa' => {
+                                      'scim' => {
+                                          'users' => ["user|da_password"]
+                                      }
                                   }
                               }
                           })
@@ -45,7 +47,7 @@ describe BootstrapVmcPlugin::Plugin do
   end
 
   it 'logins into the VMC' do
-    Mothership.commands[:login].should_receive(:invoke).with(:username => 'uaa', :password => 'da_password')
+    Mothership.commands[:login].should_receive(:invoke).with(:username => 'user', :password => 'da_password')
     command.invoke({:infrastructure => "AWS"})
   end
 end
