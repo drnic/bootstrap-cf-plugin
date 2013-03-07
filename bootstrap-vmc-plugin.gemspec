@@ -16,6 +16,6 @@ Gem::Specification.new do |s|
   s.files        = `git ls-files -- lib/* templates/*`.split("\n") + %w(README.md)
   s.require_path = "lib"
 
-  s.add_dependency "bosh_aws_bootstrap", "~>1.5"
+  s.add_dependency "bosh_aws_bootstrap", "=1.5.0.pre2"
   s.add_dependency "vmc", "~>0.5"
 end
