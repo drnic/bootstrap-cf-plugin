@@ -44,7 +44,12 @@ module BootstrapVmcPlugin
 
         puts("Running bosh deploy...")
         sh("bosh -n deploy")
+        begin
+          puts "INFO: bootstrap complete"
+          sh("bosh -n status")
+        end
       end
+
 
       private
       def self.cf_release_path

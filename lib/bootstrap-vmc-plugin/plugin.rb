@@ -24,8 +24,17 @@ module BootstrapVmcPlugin
 
       uaa_user = uaa_users.first.split("|")
 
+      self.class.commands[:logout].invoke({})
       self.class.commands[:target].invoke({:url => cf_aws_mainfest['cc']['srv_api_uri']})
+
       self.class.commands[:login].invoke({:username => uaa_user[0], :password => uaa_user[1]})
+      check_logged_in
+
+      self.class.commands[:create_org].invoke(:name => 'bootstrap-org')
+      org = client.organization_by_name("bootstrap-org")
+      self.class.commands[:create_space].invoke({:organization => org, :name => "bootstrap-space"})
+      space = client.space_by_name("bootstrap-space")
+      self.class.commands[:target].invoke({:url => cf_aws_mainfest['cc']['srv_api_uri'], :organization => org, :space => space})
     end
   end
 end

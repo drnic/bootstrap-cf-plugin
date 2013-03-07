@@ -6,7 +6,11 @@ describe BootstrapVmcPlugin::Plugin do
   before do
     BootstrapVmcPlugin::Infrastructure::Aws.stub(:bootstrap)
     Mothership.commands[:login].stub(:invoke)
+    Mothership.commands[:logout].stub(:invoke)
     Mothership.commands[:target].stub(:invoke)
+    Mothership.commands[:create_space].stub(:invoke)
+    Mothership.commands[:create_org].stub(:invoke)
+
   end
 
   around do |example|
@@ -19,9 +23,9 @@ describe BootstrapVmcPlugin::Plugin do
                                   },
                                  'uaa' => {
                                       'scim' => {
-                                          'users' => ["user|da_password"]
-                                      }
-                                  }
+                                            'users' => ["user|da_password"]
+                                        }
+                                }
                               }
                           })
       end
@@ -46,8 +50,24 @@ describe BootstrapVmcPlugin::Plugin do
     command.invoke({:infrastructure => "AWS"})
   end
 
-  it 'logins into the VMC' do
+  it 'logs out and logs in into the VMC' do
+    Mothership.commands[:logout].should_receive(:invoke)
     Mothership.commands[:login].should_receive(:invoke).with(:username => 'user', :password => 'da_password')
+    command.invoke({:infrastructure => "AWS"})
+  end
+
+  it 'VMC creates an Organization and a Sapce' do
+    Mothership.commands[:create_org].should_receive(:invoke).with(:name => "bootstrap-org")
+    command.invoke({:infrastructure => "AWS"})
+  end
+
+  it 'VMC creates a Space' do
+    Mothership.commands[:create_space].should_receive(:invoke).with(:organization => an_instance_of(CFoundry::V2::Organization), :name => "bootstrap-space")
+    command.invoke({:infrastructure => "AWS"})
+  end
+
+  it 'VMC targets the org and space' do
+    Mothership.commands[:target].should_receive(:invoke).with(:url => "http://example.com", :organization => an_instance_of(CFoundry::V2::Organization), :space => an_instance_of(CFoundry::V2::Space))
     command.invoke({:infrastructure => "AWS"})
   end
 end
