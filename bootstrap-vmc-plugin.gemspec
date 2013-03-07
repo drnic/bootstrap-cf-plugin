@@ -17,5 +17,5 @@ Gem::Specification.new do |s|
   s.require_path = "lib"
 
   s.add_dependency "bosh_aws_bootstrap", "=1.5.0.pre2"
-  s.add_dependency "vmc", "~>0.5"
+  s.add_dependency "vmc", "0.5.0.rc1"
 end
