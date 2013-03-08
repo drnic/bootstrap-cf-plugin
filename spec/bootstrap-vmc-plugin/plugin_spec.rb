@@ -1,17 +1,18 @@
 require 'spec_helper'
 
-describe BootstrapVmcPlugin::Plugin do
+command BootstrapVmcPlugin::Plugin do
+  let(:client) { fake_client }
 
-  let(:command) { Mothership.commands[:bootstrap] }
   before do
-    BootstrapVmcPlugin::Infrastructure::Aws.stub(:bootstrap)
-    Mothership.commands[:login].stub(:invoke)
-    Mothership.commands[:logout].stub(:invoke)
-    Mothership.commands[:target].stub(:invoke)
-    Mothership.commands[:create_space].stub(:invoke)
-    Mothership.commands[:create_org].stub(:invoke)
+    stub(BootstrapVmcPlugin::Infrastructure::Aws).bootstrap
 
+    stub_invoke :logout
+    stub_invoke :login, anything
+    stub_invoke :target, anything
+    stub_invoke :create_space, anything
+    stub_invoke :create_org, anything
   end
+
 
   around do |example|
     Dir.chdir(Dir.mktmpdir) do
@@ -34,40 +35,61 @@ describe BootstrapVmcPlugin::Plugin do
     end
   end
 
-  it "should throw an error when the infrastructure is not AWS" do
-    expect {
-      command.invoke({:infrastructure => "AWZ"})
-    }.to raise_error("Unsupported infrastructure AWZ")
+  context "when the infrastructure is not AWS" do
+    subject { vmc %W[bootstrap awz] }
+
+    it "should throw an error when the infrastructure is not AWS" do
+      expect {
+        subject
+      }.to raise_error("Unsupported infrastructure awz")
+    end
   end
 
-  it "should invoke AWS.bootstrap when infrastructure is AWS" do
-    BootstrapVmcPlugin::Infrastructure::Aws.should_receive(:bootstrap)
-    command.invoke({:infrastructure => "AWS"})
-  end
+  context "when the infrastructure is AWS" do
+    subject { vmc %W[bootstrap aws] }
 
-  it 'targets the VMC client' do
-    Mothership.commands[:target].should_receive(:invoke).with(:url => "http://example.com")
-    command.invoke({:infrastructure => "AWS"})
-  end
+    it "should invoke AWS.bootstrap when infrastructure is AWS" do
+      mock(BootstrapVmcPlugin::Infrastructure::Aws).bootstrap
+      subject
+    end
 
-  it 'logs out and logs in into the VMC' do
-    Mothership.commands[:logout].should_receive(:invoke)
-    Mothership.commands[:login].should_receive(:invoke).with(:username => 'user', :password => 'da_password')
-    command.invoke({:infrastructure => "AWS"})
-  end
+    it 'targets the VMC client' do
+      mock_invoke :target, :url => "http://example.com"
+      subject
+    end
 
-  it 'VMC creates an Organization and a Sapce' do
-    Mothership.commands[:create_org].should_receive(:invoke).with(:name => "bootstrap-org")
-    command.invoke({:infrastructure => "AWS"})
-  end
+    it 'logs out and logs in into the VMC' do
+      mock_invoke :logout
+      mock_invoke :login, :username => 'user', :password => 'da_password'
+      subject
+    end
 
-  it 'VMC creates a Space' do
-    Mothership.commands[:create_space].should_receive(:invoke).with(:organization => an_instance_of(CFoundry::V2::Organization), :name => "bootstrap-space")
-    command.invoke({:infrastructure => "AWS"})
-  end
+    it 'VMC creates an Organization and a Space' do
+      mock_invoke :create_org, :name => "bootstrap-org"
+      subject
+    end
 
-  it 'VMC targets the org and space' do
-    Mothership.commands[:target].should_receive(:invoke).with(:url => "http://example.com", :organization => an_instance_of(CFoundry::V2::Organization), :space => an_instance_of(CFoundry::V2::Space))
-    command.invoke({:infrastructure => "AWS"})
+    context "when the org was created" do
+      let(:client) { fake_client :organizations => [bootstrap_org] }
+
+      let(:bootstrap_org) { fake :organization, :name => "bootstrap-org" }
+
+      it 'VMC creates a Space' do
+        mock_invoke :create_space, :organization => bootstrap_org, :name => "bootstrap-space"
+        subject
+      end
+    end
+
+    context "when the org and space were created" do
+      let(:client) { fake_client :organizations => [bootstrap_org], :spaces => [bootstrap_space] }
+
+      let(:bootstrap_org) { fake :organization, :name => "bootstrap-org" }
+      let(:bootstrap_space) { fake :space, :name => "bootstrap-space" }
+
+      it 'VMC targets the org and space' do
+        mock_invoke :target, :url => "http://example.com", :organization => bootstrap_org, :space => bootstrap_space
+        subject
+      end
+    end
   end
 end
