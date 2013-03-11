@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 describe BootstrapVmcPlugin::Infrastructure::Aws do
-  context "#bootstrap" do
+  context "::bootstrap" do
     let(:cf_release_path) { "/tmp/spec-cf-release" }
     let!(:working_path) do
       Dir.mktmpdir.tap do |path|

@@ -4,6 +4,7 @@ command BootstrapVmcPlugin::Plugin do
   let(:client) { fake_client }
 
   before do
+    stub(BootstrapVmcPlugin::DirectorCheck).check
     stub(BootstrapVmcPlugin::Infrastructure::Aws).bootstrap
 
     stub_invoke :logout
@@ -47,6 +48,16 @@ command BootstrapVmcPlugin::Plugin do
 
   context "when the infrastructure is AWS" do
     subject { vmc %W[bootstrap aws] }
+
+    describe "verifying access to director" do
+      it "should blow up if unable to get director status" do
+        stub(BootstrapVmcPlugin::DirectorCheck).check { raise "some error message" }
+        dont_allow(BootstrapVmcPlugin::Infrastructure::Aws).bootstrap
+        expect {
+          subject
+        }.to raise_error "some error message"
+      end
+    end
 
     it "should invoke AWS.bootstrap when infrastructure is AWS" do
       mock(BootstrapVmcPlugin::Infrastructure::Aws).bootstrap

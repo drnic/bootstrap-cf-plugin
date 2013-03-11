@@ -3,6 +3,7 @@ require "vmc"
 require "common/version"
 require "bootstrap-vmc-plugin/generator"
 require "bootstrap-vmc-plugin/plugin"
+require "bootstrap-vmc-plugin/director_check"
 require "bootstrap-vmc-plugin/infrastructure/aws"
 require 'net/http'
 

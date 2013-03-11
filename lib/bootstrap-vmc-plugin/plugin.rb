@@ -1,4 +1,5 @@
 require "bootstrap-vmc-plugin"
+
 module BootstrapVmcPlugin
   class Plugin < VMC::CLI
     def precondition
@@ -17,6 +18,7 @@ module BootstrapVmcPlugin
       infrastructure = input[:infrastructure].to_s.capitalize
       infrastructure_class = lookup_infrastructure_class(infrastructure)
       raise "Unsupported infrastructure #{input[:infrastructure]}" unless infrastructure_class
+      DirectorCheck.check
       infrastructure_class.bootstrap
 
       cf_aws_mainfest = load_yaml_file("cf-aws.yml")['properties']
