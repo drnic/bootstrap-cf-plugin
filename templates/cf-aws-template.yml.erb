@@ -66,7 +66,7 @@ resource_pools:
   cloud_properties:
     instance_type: m1.small
     availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
-- name: smallfast 
+- name: smallfast
   network: default
   size: 1
   stemcell:
@@ -231,6 +231,14 @@ jobs:
     - dns
     - gateway
 
+- name: collector
+  release: appcloud
+  template: collector
+  instances: 1
+  resource_pool: infrastructure
+  networks:
+    - name: default
+
 - name: service_gateways
   template:
   - mysql_gateway
@@ -301,7 +309,7 @@ jobs:
   - redis_node_ng
   - mysql_node_ng
   instances: 1
-  resource_pool: smallfast 
+  resource_pool: smallfast
   persistent_disk: 7168
   networks:
   - name: default
@@ -553,3 +561,9 @@ properties:
     scim:
       users:
       - admin|the_admin_pw|scim.write,scim.read,openid,cloud_controller.admin
+  collector:
+    use_tsdb: false
+    use_aws_cloudwatch: true
+    aws_access_key_id: <%= find('properties.template_only.aws.access_key_id') %>
+    aws_secret_access_key: <%= find('properties.template_only.aws.secret_access_key') %>
+    deployment_name: <%= find("name") %>
