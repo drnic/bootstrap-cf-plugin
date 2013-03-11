@@ -2,6 +2,7 @@ require "bootstrap-vmc-plugin"
 
 module BootstrapVmcPlugin
   class Plugin < VMC::CLI
+    STATIC_TOKENS = [{provider: 'sendgrid-dev', label: 'smtp', token: 'ad_smtp_sendgriddev_token'}]
     def precondition
       # skip all default preconditions
     end
@@ -9,6 +10,18 @@ module BootstrapVmcPlugin
     def lookup_infrastructure_class(infrastructure)
       infrastructure_module = Kernel.const_get("BootstrapVmcPlugin").const_get("Infrastructure")
       infrastructure_module.const_get(infrastructure) if infrastructure_module.const_defined?(infrastructure)
+    end
+
+    def tokens_from_jobs(jobs)
+      jobs.each_with_object([]) do |job, gateways|
+        if job['properties']
+          job['properties'].each do |k,v|
+            if v.is_a?(Hash) && v['token']
+              gateways << {label: k.gsub("_gateway", ""), token: v['token'], provider: 'core'}
+            end
+          end
+        end
+      end
     end
 
     desc "Bootstrap a CF deployment"
@@ -21,13 +34,14 @@ module BootstrapVmcPlugin
       DirectorCheck.check
       infrastructure_class.bootstrap
 
-      cf_aws_mainfest = load_yaml_file("cf-aws.yml")['properties']
-      uaa_users = cf_aws_mainfest['uaa']['scim']['users']
+      cf_aws_manifest = load_yaml_file("cf-aws.yml")
+      cf_properties = cf_aws_manifest.fetch('properties')
+      uaa_users = cf_properties.fetch('uaa').fetch('scim').fetch('users')
 
       uaa_user = uaa_users.first.split("|")
 
       invoke :logout
-      invoke :target, :url => cf_aws_mainfest['cc']['srv_api_uri']
+      invoke :target, :url => cf_properties.fetch('cc').fetch('srv_api_uri')
 
       invoke :login, :username => uaa_user[0], :password => uaa_user[1]
 
@@ -37,7 +51,12 @@ module BootstrapVmcPlugin
       invoke :create_space, :organization => org, :name => "bootstrap-space"
 
       space = client.space_by_name("bootstrap-space")
-      invoke :target, :url => cf_aws_mainfest['cc']['srv_api_uri'], :organization => org, :space => space
+      invoke :target, :url => cf_properties.fetch('cc').fetch('srv_api_uri'), :organization => org, :space => space
+
+      # invoke a bunch of create-service-token commands
+      (tokens_from_jobs(cf_aws_manifest.fetch('jobs', [])) + STATIC_TOKENS).each do |gateway_info|
+        invoke :create_service_auth_token, gateway_info
+      end
     end
   end
 end

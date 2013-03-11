@@ -2,6 +2,11 @@ require 'spec_helper'
 
 command BootstrapVmcPlugin::Plugin do
   let(:client) { fake_client }
+  let(:mongodb_token) { 'mongo-secret' }
+  let(:mysql_token) { 'mysql-secret' }
+  let(:postgresql_token) { 'postgresql-secret' }
+  let(:smtp_token) { 'ad_smtp_sendgriddev_token' }
+
 
   before do
     stub(BootstrapVmcPlugin::DirectorCheck).check
@@ -12,24 +17,48 @@ command BootstrapVmcPlugin::Plugin do
     stub_invoke :target, anything
     stub_invoke :create_space, anything
     stub_invoke :create_org, anything
+    stub_invoke :create_service_auth_token, anything
   end
 
+
+  def manifest_hash
+    {
+      "jobs" => [
+        {
+          "properties" => {
+            "mongodb_gateway" => {
+              "token" => mongodb_token
+            },
+            "mysql_gateway" => {
+              "token" => mysql_token
+            }
+          }
+        },
+        {
+          "properties" => {
+            "postgresql_gateway" => {
+              "token" => postgresql_token
+            }
+          }
+        }
+      ],
+        "properties" => {
+        "cc" => {
+          "srv_api_uri" => "http://example.com"
+        },
+        'uaa' => {
+          'scim' => {
+            'users' => ["user|da_password"]
+          }
+        }
+      }
+    }
+  end
 
   around do |example|
     Dir.chdir(Dir.mktmpdir) do
       File.open("cf-aws.yml", "w") do |w|
-        w.write YAML.dump({
-                              "properties" => {
-                                  "cc" => {
-                                      "srv_api_uri" => "http://example.com"
-                                  },
-                                 'uaa' => {
-                                      'scim' => {
-                                            'users' => ["user|da_password"]
-                                        }
-                                }
-                              }
-                          })
+        w.write(YAML.dump(manifest_hash))
       end
 
       example.run
@@ -77,6 +106,14 @@ command BootstrapVmcPlugin::Plugin do
 
     it 'VMC creates an Organization and a Space' do
       mock_invoke :create_org, :name => "bootstrap-org"
+      subject
+    end
+
+    it "invokes create-service-token for each service" do
+      mock_invoke :create_service_auth_token, :label => 'mongodb', :provider => 'core', :token => mongodb_token
+      mock_invoke :create_service_auth_token, :label => 'mysql', :provider => 'core', :token => mysql_token
+      mock_invoke :create_service_auth_token, :label => 'postgresql', :provider => 'core', :token => postgresql_token
+      mock_invoke :create_service_auth_token, :label => 'smtp', :provider => 'sendgrid-dev', :token => smtp_token
       subject
     end
 
