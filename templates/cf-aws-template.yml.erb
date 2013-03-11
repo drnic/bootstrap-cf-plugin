@@ -41,25 +41,10 @@ networks:
       <%- end -%>
       subnet: <%= find('properties.template_only.aws.subnet_id') %>
 
-- name: vip_network
-  type: vip
-  # Fake network properties to satisfy bosh diff
-  subnets:
-  - range: 127.0.99.0/24
-    gateway: 127.0.99.1
-    dns:
-    - 127.0.99.250
-  cloud_properties:
-    security_groups:
-    <%- find('networks.vip_network.cloud_properties.security_groups').each do |sec_group| -%>
-    - <%= sec_group %>
-    <%- end -%>
-
-
 resource_pools:
 - name: common
   network: default
-  size: 13
+  size: 12
   stemcell:
     name: bosh-stemcell
     version: latest
@@ -74,6 +59,15 @@ resource_pools:
     version: latest
   cloud_properties:
     instance_type: c1.medium
+    availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
+- name: large
+  network: default
+  size: 1
+  stemcell:
+    name: bosh-stemcell
+    version: latest
+  cloud_properties:
+    instance_type: m1.large
     availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
 - name: router
   network: default
@@ -242,10 +236,13 @@ jobs:
 - name: service_gateways
   template:
   - mysql_gateway
+  - postgresql_gateway
   - redis_gateway
+  - mongodb_gateway
   - marketplace_gateway
+  - rabbit_gateway
   instances: 1
-  resource_pool: common
+  resource_pool: smallfast
   persistent_disk: 7168
   networks:
   - name: default
@@ -264,6 +261,20 @@ jobs:
       supported_versions: ["5.1"]
       version_aliases:
         current: "5.1"
+    postgresql_gateway:
+      token: postgresql-token
+      cc_api_version: v2
+      check_orphan_interval: 7200
+      supported_versions: ["9.1"]
+      version_aliases:
+        current: "9.1"
+    rabbit_gateway:
+      token: rabbit-token
+      cc_api_version: v2
+      default_plan: "100"
+      supported_versions: ["2.8"]
+      version_aliases:
+        current: "2.8"
     redis_gateway:
       token: redis-token
       cc_api_version: v2
@@ -271,6 +282,13 @@ jobs:
       supported_versions: ["2.6"]
       version_aliases:
         current: "2.6"
+    mongodb_gateway:
+      token: mongodb-token
+      cc_api_version: v2
+      default_plan: "100"
+      supported_versions: ["2.2"]
+      version_aliases:
+        current: "2.2"
     marketplace_gateway:
       marketplace: appdirect
       cc_api_version: v2
@@ -307,9 +325,12 @@ jobs:
 - name: service_nodes
   template:
   - redis_node_ng
+  - mongodb_node_ng
   - mysql_node_ng
+  - postgresql_node_ng
+  - rabbit_node_ng
   instances: 1
-  resource_pool: smallfast
+  resource_pool: large
   persistent_disk: 7168
   networks:
   - name: default
@@ -320,12 +341,35 @@ jobs:
     redis_node:
       supported_versions: ["2.6"]
       default_version: "2.6"
+      health_check_port: 2345
+      warden_socket_path: '/tmp/warden_redis.sock'
+    mongodb_node:
+      supported_versions: ["2.2"]
+      default_version: "2.2"
+      max_tmp: 900
+      health_check_port: 2346
+      warden_socket_path: '/tmp/warden_mongodb.sock'
+    rabbit_node:
+      supported_versions: ["2.8"]
+      default_version: "2.8"
+      health_check_port: 2347
+      warden_socket_path: '/tmp/warden_rabbit.sock'
     mysql_node:
       available_storage: 2048
       password: "c1oudc0wc1oudc0w"
       max_db_size: 256
       default_version: "5.5"
       supported_versions: ["5.1"]
+      health_check_port: 2348
+      warden_socket_path: '/tmp/warden_mysql.sock'
+    postgresql_node:
+      supported_versions: ["9.1"]
+      default_version: "9.1"
+      health_check_port: 2349
+      warden_socket_path: '/tmp/warden_postgresql.sock'
+      production: true
+      password: F62a59vbcgQ4
+
 
 properties:
   template_only:
@@ -487,8 +531,78 @@ properties:
             serialization: enable
             snapshot:
               quota: 1
-            worker_count: 5
+            worker_count: 1
 
+    mongodb:
+      "100":
+        description: "Dedicated server, shared VM, 20MB memory, 50 connections"
+        free: true
+        job_management:
+          high_water: 410
+          low_water: 40
+        configuration:
+          capacity: 125
+          max_clients: 10
+          quota_files: 4
+          quota_data_size: 240
+          enable_journaling: true
+          backup:
+            enable: true
+          lifecycle:
+            enable: true
+            serialization: enable
+            snapshot:
+              quota: 1
+            worker_count: 1
+
+    postgresql:
+      "100":
+        description: "Shared server, shared VM, 1MB memory, 10MB storage, 10 connections"
+        free: true
+        job_management:
+          high_water: 450
+          low_water: 50
+        configuration:
+          capacity: 500
+          max_db_size: 10
+          max_long_query: 3
+          max_long_tx: 10
+          max_clients: 10
+          max_connections: 1000
+          shared_buffers: 312
+          effective_cache_size: 1115
+          shmmax: 390070272
+          checkpoint_segments: 16
+          checkpoint_segments_max: 50
+          maintenance_work_mem: 30
+          backup:
+            enable: true
+          lifecycle:
+            enable: true
+            serialization: enable
+            snapshot:
+              quota: 1
+            worker_count: 1
+          warden:
+            enable: false
+
+    rabbit:
+      "100":
+        description: "Dedicated server, shared VM, 1MB messages/day, 10 connections"
+        free: true
+        job_management:
+          high_water: 130
+          low_water: 20
+        configuration:
+          capacity: 150
+          max_disk: 10
+          max_clients: 10
+          vm_memory_high_watermark: 0.00587
+          free_disk_low_water: 0.01832
+          bandwidth_quotas:
+            per_day: 1
+            per_second: 0.01
+          filesystem_quota: true
 
 
   syslog_aggregator:
