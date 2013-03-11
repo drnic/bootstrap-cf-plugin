@@ -44,7 +44,7 @@ networks:
 resource_pools:
 - name: common
   network: default
-  size: 12
+  size: 13
   stemcell:
     name: bosh-stemcell
     version: latest
@@ -226,10 +226,9 @@ jobs:
     - gateway
 
 - name: collector
-  release: appcloud
   template: collector
   instances: 1
-  resource_pool: infrastructure
+  resource_pool: common
   networks:
     - name: default
 
