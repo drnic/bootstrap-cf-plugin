@@ -225,12 +225,12 @@ jobs:
     - dns
     - gateway
 
-#- name: collector
-#  template: collector
-#  instances: 1
-#  resource_pool: common
-#  networks:
-#    - name: default
+- name: collector
+  template: collector
+  instances: 1
+  resource_pool: common
+  networks:
+    - name: default
 
 - name: service_gateways
   template:
