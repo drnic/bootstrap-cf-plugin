@@ -14,8 +14,7 @@ describe BootstrapVmcPlugin::Generator do
   end
 
   it "should allow access to all of the subnets" do
-    subject.subnet_id.should == 'subnet-4bdf6c27'
-    subject.subnet_id('cf').should == 'subnet-4bdf6c27'
+    subject.subnet_id('cf_subnet').should == 'subnet-4bdf6c27'
     subject.subnet_id('bosh').should == 'subnet-4bdf6c26'
     subject.subnet_id('other').should == 'subnet-xxxxxxxx'
   end

@@ -32,7 +32,7 @@ module BootstrapVmcPlugin
           sh("bosh -n deployments | tail -1 | grep 'No deployments'")
 
           puts("Missing deployment, creating...")
-          BootstrapVmcPlugin::Generator.new("aws_vpc_receipt.yml", "aws_rds_receipt.yml").save
+          generate_stub
           template_file = File.expand_path(File.join(File.dirname(__FILE__),'..','..','..','templates','cf-aws-template.yml.erb'))
 
           sh("bosh -n deployment cf-aws.yml")
@@ -50,6 +50,9 @@ module BootstrapVmcPlugin
         end
       end
 
+      def self.generate_stub
+        BootstrapVmcPlugin::Generator.new("aws_vpc_receipt.yml", "aws_rds_receipt.yml").save
+      end
 
       private
       def self.cf_release_path

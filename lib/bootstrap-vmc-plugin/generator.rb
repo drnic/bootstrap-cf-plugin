@@ -19,7 +19,8 @@ module BootstrapVmcPlugin
     end
 
     def director_uuid
-      YAML.load(Net::HTTP.get(URI.parse("http://micro.#{domain}:25555/info")))["uuid"]
+      bosh_target = YAML.load_file(File.join(ENV["HOME"], ".bosh_config"))["target"]
+      YAML.load(Net::HTTP.get(URI.parse("#{bosh_target}/info")))["uuid"]
     end
 
     def micro_ip
@@ -30,7 +31,7 @@ module BootstrapVmcPlugin
       @aws_request["vpc"]["subnets"]["bosh"]["availability_zone"]
     end
 
-    def subnet_id(subnet_name = "cf")
+    def subnet_id(subnet_name)
       @aws_receipt["vpc"]["subnets"][subnet_name]
     end
 

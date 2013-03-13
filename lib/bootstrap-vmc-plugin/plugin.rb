@@ -58,5 +58,16 @@ module BootstrapVmcPlugin
         invoke :create_service_auth_token, gateway_info
       end
     end
+
+    desc "Generate a manifest stub"
+    group :admin
+    input :infrastructure, :argument => :required, :desc => "The infrastructure for which to generate a stub"
+    def generate_stub
+      infrastructure = input[:infrastructure].to_s.capitalize
+      infrastructure_class = lookup_infrastructure_class(infrastructure)
+      raise "Unsupported infrastructure #{input[:infrastructure]}" unless infrastructure_class
+      DirectorCheck.check
+      infrastructure_class.generate_stub
+    end
   end
 end

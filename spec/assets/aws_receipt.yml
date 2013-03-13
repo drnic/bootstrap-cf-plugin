@@ -8,8 +8,9 @@ vpc:
   domain: cfdev.com
   subnets:
     bosh: subnet-4bdf6c26
-    cf: subnet-4bdf6c27
+    cf_subnet: subnet-4bdf6c27
     other: subnet-xxxxxxxx
+    services_subnet: subnet-80709g
 elastic_ips:
  router:
   dns_record: "*"
