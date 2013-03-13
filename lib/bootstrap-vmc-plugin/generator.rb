@@ -30,8 +30,8 @@ module BootstrapVmcPlugin
       @aws_request["vpc"]["subnets"]["bosh"]["availability_zone"]
     end
 
-    def subnet_id
-      @aws_receipt["vpc"]["subnets"]["cf"]
+    def subnet_id(subnet_name = "cf")
+      @aws_receipt["vpc"]["subnets"][subnet_name]
     end
 
     def aws_access_key_id
