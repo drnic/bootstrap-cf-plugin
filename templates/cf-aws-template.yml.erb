@@ -8,7 +8,7 @@ release:
 
 compilation:
   workers: 3
-  network: default
+  network: cf
   reuse_compilation_vms: true
   cloud_properties:
     instance_type: c1.medium
@@ -22,29 +22,43 @@ update:
   max_errors: 1
 
 networks:
-- name: default
+- name: cf
   type: manual
   subnets:
-  - range: 10.10.1.0/24
+  - range: 10.10.2.0/24
     name: default_unused
     reserved:
-    - 10.10.1.2 - 10.10.1.9
+    - 10.10.2.2 - 10.10.2.9
     static:
-    - 10.10.1.10 - 10.10.1.30
-    gateway: 10.10.1.1
+    - 10.10.2.10 - 10.10.2.30
+    gateway: 10.10.2.1
     dns:
     - 10.10.0.2  # amazon has only 1 DNS server for the whole VPC at x.x.0.2
     cloud_properties:
       security_groups:
-      <%- find('networks.default.subnets.default_unused.cloud_properties.security_groups').each do |sec_group| -%>
-      - <%= sec_group %>
-      <%- end -%>
-      subnet: <%= find('properties.template_only.aws.subnet_id') %>
+      - cf
+      subnet: <%= find('properties.template_only.aws.subnet_ids.cf') %>
+- name: services
+  type: manual
+  subnets:
+  - range: 10.10.4.0/24
+    name: default_unused
+    reserved:
+    - 10.10.4.2 - 10.10.4.9
+    static:
+    - 10.10.4.10 - 10.10.4.30
+    gateway: 10.10.4.1
+    dns:
+    - 10.10.0.2  # amazon has only 1 DNS server for the whole VPC at x.x.0.2
+    cloud_properties:
+      security_groups:
+      - cf
+      subnet: <%= find('properties.template_only.aws.subnet_ids.services') %>
 
 resource_pools:
 - name: common
-  network: default
-  size: 13
+  network: cf
+  size: 11
   stemcell:
     name: bosh-stemcell
     version: latest
@@ -52,7 +66,7 @@ resource_pools:
     instance_type: m1.small
     availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
 - name: smallfast
-  network: default
+  network: cf
   size: 1
   stemcell:
     name: bosh-stemcell
@@ -60,17 +74,8 @@ resource_pools:
   cloud_properties:
     instance_type: c1.medium
     availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
-- name: large
-  network: default
-  size: 1
-  stemcell:
-    name: bosh-stemcell
-    version: latest
-  cloud_properties:
-    instance_type: m1.large
-    availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
 - name: router
-  network: default
+  network: cf
   size: 1
   stemcell:
     name: bosh-stemcell
@@ -80,8 +85,28 @@ resource_pools:
     availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
     elbs:
     - cfrouter
+- name: services-small
+  network: services
+  size: 3
+  stemcell:
+    name: bosh-stemcell
+    version: latest
+  cloud_properties:
+    instance_type: m1.small
+    availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
+- name: services-large # p01 services_7gb
+  network: services
+  size: 1
+  stemcell:
+    name: bosh-stemcell
+    version: latest
+  cloud_properties:
+    instance_type: m1.large
+    availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
 
 jobs:
+# ====================== BEGIN CF JOBS =========================
+
 - name: debian_nfs_server
   template: debian_nfs_server
   instances: 1
@@ -91,22 +116,9 @@ jobs:
     debian_nfs_server:
       no_root_squash: true
   networks:
-  - name: default
+  - name: cf
     static_ips:
-    - <%= ip( 0, 'default.static') %>
-
-- name: services_nfs
-  template: debian_nfs_server
-  instances: 1
-  resource_pool: common
-  persistent_disk: 8192
-  properties:
-    debian_nfs_server:
-      no_root_squash: true
-  networks:
-  - name: default
-    static_ips:
-    - <%= ip( 1, 'default.static') %>
+    - <%= ip( 0, 'cf.static') %>
 
 - name: syslog_aggregator
   template: syslog_aggregator
@@ -114,27 +126,27 @@ jobs:
   resource_pool: common
   persistent_disk: 100000
   networks:
-  - name: default
+  - name: cf
     static_ips:
-    - <%= ip( 2, 'default.static') %>
+    - <%= ip( 1, 'cf.static') %>
 
 - name: nats
   template: nats
   instances: 1
   resource_pool: common
   networks:
-  - name: default
+  - name: cf
     static_ips:
-    - <%= ip( 3, 'default.static') %>
+    - <%= ip( 2, 'cf.static') %>
 
 - name: postgres
   template: postgres
   instances: 1
   resource_pool: common
   networks:
-  - name: default
+  - name: cf
     static_ips:
-    - <%= ip( 4, 'default.static') %>
+    - <%= ip( 3, 'cf.static') %>
   persistent_disk: 2048
   properties:
     db: uaadb
@@ -144,36 +156,18 @@ jobs:
   instances: 1
   resource_pool: common
   networks:
-  - name: default
+  - name: cf
     static_ips:
-    - <%= ip( 5, 'default.static') %>
-
-
-- name: services_redis
-  template: vcap_redis
-  instances: 1
-  resource_pool: common
-  persistent_disk: 1024
-  networks:
-  - name: default
-    static_ips:
-    - <%= ip( 6, 'default.static') %>
-  properties:
-    vcap_redis:
-      port: 3456
-      password: bt3FXngo
-      maxmemory: 2000000000
-      persistence:
-        dir: /var/vcap/store/vcap_redis
+    - <%= ip( 4, 'cf.static') %>
 
 - name: uaa
   template: uaa
   instances: 1
   resource_pool: common
   networks:
-  - name: default
+  - name: cf
     static_ips:
-    - <%= ip( 7, 'default.static') %>
+    - <%= ip( 5, 'cf.static') %>
 
 
 - name: login
@@ -181,16 +175,16 @@ jobs:
   instances: 1
   resource_pool: common
   networks:
-  - name: default
+  - name: cf
 
 - name: cloud_controller
   template: cloud_controller_ng
   instances: 1
   resource_pool: common
   networks:
-  - name: default
+  - name: cf
     static_ips:
-    - <%= ip( 8, 'default.static') %>
+    - <%= ip( 6, 'cf.static') %>
   properties:
     ccdb: ccdb
 
@@ -199,19 +193,19 @@ jobs:
   instances: 1
   resource_pool: router
   networks:
-  - name: default
+  - name: cf
     default:
     - dns
     - gateway
     static_ips:
-    - <%= ip( 9, 'default.static') %>
+    - <%= ip( 7, 'cf.static') %>
 
 - name:  health_manager
   template: health_manager_next
   instances: 1
   resource_pool: common
   networks:
-  - name: default
+  - name: cf
 
 - name: dea_next
   template: dea_next
@@ -220,7 +214,7 @@ jobs:
   update:
     max_in_flight: 8
   networks:
-  - name: default
+  - name: cf
     default:
     - dns
     - gateway
@@ -230,7 +224,39 @@ jobs:
   instances: 1
   resource_pool: common
   networks:
-    - name: default
+    - name: cf
+
+# ====================== BEGIN SERVICES JOBS =========================
+
+- name: services_nfs
+  template: debian_nfs_server
+  instances: 1
+  resource_pool: services-small
+  persistent_disk: 8192
+  properties:
+    debian_nfs_server:
+      no_root_squash: true
+  networks:
+  - name: services
+    static_ips:
+    - <%= ip( 0, 'services.static') %>
+
+- name: services_redis
+  template: vcap_redis
+  instances: 1
+  resource_pool: services-small
+  persistent_disk: 1024
+  networks:
+  - name: services
+    static_ips:
+    - <%= ip( 1, 'services.static') %>
+  properties:
+    vcap_redis:
+      port: 3456
+      password: bt3FXngo
+      maxmemory: 2000000000
+      persistence:
+        dir: /var/vcap/store/vcap_redis
 
 - name: service_gateways
   template:
@@ -241,12 +267,12 @@ jobs:
   - marketplace_gateway
   - rabbit_gateway
   instances: 1
-  resource_pool: smallfast
+  resource_pool: services-small
   persistent_disk: 7168
   networks:
-  - name: default
+  - name: services
     static_ips:
-    - <%= ip( 10, 'default.static') %>
+    - <%= ip( 2, 'services.static') %>
   properties:
     uaa_client_id: "vmc"
     uaa_endpoint: http://uaa.<%= find("properties.domain") %>
@@ -320,7 +346,6 @@ jobs:
         key: "k"
         secret: "s"
 
-
 - name: service_nodes
   template:
   - redis_node_ng
@@ -329,12 +354,12 @@ jobs:
   - postgresql_node_ng
   - rabbit_node_ng
   instances: 1
-  resource_pool: large
+  resource_pool: services-large
   persistent_disk: 7168
   networks:
-  - name: default
+  - name: services
     static_ips:
-    - <%= ip( 11, 'default.static') %>
+    - <%= ip( 3, 'services.static') %>
   properties:
     plan: "100"
     redis_node:
@@ -377,13 +402,13 @@ properties:
   domain: <%= find("properties.domain") %>
 
   networks:
-    apps: default
-    management: default
+    apps: cf
+    management: cf
 
   nats:
     user: nats
     password: "c1oudc0wc1oudc0w"
-    address: <%= ip( 3, 'default.static') %>
+    address: <%= ip( 2, 'cf.static') %>
     port: 4222
 
   ccdb: &ccdb
@@ -392,7 +417,7 @@ properties:
   ccdb_ng: *ccdb
 
   uaadb:
-    address: <%= ip( 4, 'default.static') %>
+    address: <%= ip( 3, 'cf.static') %>
     port: 2544
     roles:
     - tag: admin
@@ -436,7 +461,7 @@ properties:
   ccng: *cc
 
   vcap_redis:
-    address: <%= ip( 5, 'default.static') %>
+    address: <%= ip( 4, 'cf.static') %>
     port: 3456
     password: "c1oudc0wc1oudc0w"
     maxmemory: 500000000
@@ -459,19 +484,19 @@ properties:
     num_instances: 256
 
   nfs_server:
-    address: <%= ip( 0, 'default.static') %>
-    network: 10.10.1.0/24
+    address: <%= ip( 0, 'cf.static') %>
+    network: 10.10.2.0/23
 
   service_lifecycle:
     download_url: service-serialization.<%= find("properties.domain") %>
     mount_point: /var/vcap/service_lifecycle
     tmp_dir: /var/vcap/service_lifecycle/tmp_dir
     resque:
-      host: <%= ip( 6, 'default.static') %>
+      host: <%= ip( 1, 'services.static') %>
       port: 3456
       password: bt3FXngo
     nfs_server:
-      address: <%= ip( 1, 'default.static') %>
+      address: <%= ip( 0, 'services.static') %>
       export_dir: /var/vcap/store/shared
     serialization_data_server:
     - 0.serialization-data-server.default.<%= find("name") %>.bosh
@@ -605,7 +630,7 @@ properties:
 
 
   syslog_aggregator:
-    address: <%= ip( 2, 'default.static') %>
+    address: <%= ip( 1, 'cf.static') %>
     port: 54321
 
   stager:
