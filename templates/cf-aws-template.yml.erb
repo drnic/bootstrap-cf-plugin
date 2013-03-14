@@ -139,7 +139,7 @@ jobs:
     static_ips:
     - <%= ip( 2, 'cf.static') %>
 
-- name: postgres
+- name: uaadb
   template: postgres
   instances: 1
   resource_pool: common
