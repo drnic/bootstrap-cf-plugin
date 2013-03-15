@@ -236,6 +236,9 @@ jobs:
   properties:
     debian_nfs_server:
       no_root_squash: true
+    nfs_server:
+      address: <%= ip( 0, 'services.static') %>
+      network: 10.10.4.0/23
   networks:
   - name: services
     static_ips:
