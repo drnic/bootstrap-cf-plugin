@@ -110,7 +110,7 @@ PATH
       vmc (~> 0.5)
 
 GEM
-  remote: https://rubygems.org/
+  remote: http://rubygems.org/
   specs:
     addressable (2.3.3)
     archive-tar-minitar (0.5.2)

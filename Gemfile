@@ -1,4 +1,4 @@
-source 'https://rubygems.org'
+source 'http://rubygems.org'
 
 
 git "git://github.com/cloudfoundry/bosh" do
