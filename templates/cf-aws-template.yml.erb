@@ -266,6 +266,7 @@ jobs:
   - mongodb_gateway
   - marketplace_gateway
   - rabbit_gateway
+  - oauth2_gateway
   instances: 1
   resource_pool: services-small
   persistent_disk: 7168
@@ -345,6 +346,8 @@ jobs:
         endpoint: "https://dev3cloudfoundry.appdirect.com"
         key: "k"
         secret: "s"
+    oauth2_gateway:
+	  token: oauth2-token
 
 - name: service_nodes
   template:
@@ -691,6 +694,14 @@ properties:
         authorities: portal.users.read
         access-token-validity: 1209600
         refresh-token-validity: 1209600
+      oauth2service:
+        secret: oauth2servicesecret
+        scope: openid,cloud_controller.read,cloud_controller.write
+        authorities: uaa.resource,oauth.service,clients.read,clients.write,clients.secret
+        authorized-grant-types: client_credentials,implicit
+        redirect-uri: http://rewritten-later.cloudfoundry.com/whatever
+        override: true
+        autoapprove: true
       vmc:
         override: true
         authorized-grant-types: password,implicit
