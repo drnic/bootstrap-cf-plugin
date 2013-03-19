@@ -17,7 +17,7 @@ module BootstrapVmcPlugin
         if job['properties']
           job['properties'].each do |k,v|
             if v.is_a?(Hash) && v['token']
-              gateways << {label: k.gsub("_gateway", ""), token: v['token'], provider: 'core'}
+              gateways << {label: k.gsub("_gateway", "").gsub("rabbit", "rabbitmq"), token: v['token'], provider: 'core'}
             end
           end
         end
