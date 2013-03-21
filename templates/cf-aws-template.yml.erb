@@ -58,12 +58,21 @@ networks:
 resource_pools:
 - name: common
   network: cf
-  size: 11
+  size: 10
   stemcell:
     name: bosh-stemcell
     version: latest
   cloud_properties:
     instance_type: m1.small
+    availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
+- name: dea
+  network: cf
+  size: 1
+  stemcell:
+    name: bosh-stemcell
+    version: latest
+  cloud_properties:
+    instance_type: m1.large
     availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
 - name: router
   network: cf
@@ -94,7 +103,7 @@ resource_pools:
   cloud_properties:
     instance_type: c1.medium
     availability_zone: <%= find('properties.template_only.aws.availability_zone') %>
-- name: services-large 
+- name: services-large
   network: services
   size: 1
   stemcell:
@@ -210,7 +219,7 @@ jobs:
 - name: dea_next
   template: dea_next
   instances: 1
-  resource_pool: common
+  resource_pool: dea
   update:
     max_in_flight: 8
   networks:
@@ -484,7 +493,7 @@ properties:
     max_memory: 4096
 
   dea_next:
-    memory_mb: 8192
+    memory_mb: 7500
     memory_overcommit_factor: 4
     disk_mb: 16384
     disk_overcommit_factor: 4
