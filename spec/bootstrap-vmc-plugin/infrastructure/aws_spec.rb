@@ -105,8 +105,12 @@ describe BootstrapVmcPlugin::Infrastructure::Aws do
       end
 
       context "if a stemcell URL override is set in the environment" do
-        before do
+        before(:all) do
           ENV["BOSH_OVERRIDE_LIGHT_STEMCELL_URL"] = "http://stemcells-r-us.com/stemcell.tgz"
+        end
+
+        after(:all) do
+          ENV.delete "BOSH_OVERRIDE_LIGHT_STEMCELL_URL"
         end
 
         it 'downloads the stemcell at the given URL' do
