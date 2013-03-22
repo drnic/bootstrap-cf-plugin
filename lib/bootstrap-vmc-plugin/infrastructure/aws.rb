@@ -1,7 +1,8 @@
 module BootstrapVmcPlugin
   module Infrastructure
     class Aws
-      LIGHT_STEMCELL_URL = "http://bosh-jenkins-artifacts.s3.amazonaws.com/last_successful_bosh-stemcell_light.tgz"
+      DEFAULT_LIGHT_STEMCELL_URL = "http://bosh-jenkins-artifacts.s3.amazonaws.com/last_successful_bosh-stemcell_light.tgz"
+
       def self.bootstrap
         begin
           puts("Checking for release...")
@@ -16,11 +17,13 @@ module BootstrapVmcPlugin
         end
 
         begin
-          puts("Checking for stemcell...")
-          sh("bosh -n stemcells | tail -1 | grep 'No stemcells'")
-          puts("Missing stemcell uploading...")
-          stemcell_file_name = LIGHT_STEMCELL_URL.split("/").last
-          sh("cd /tmp && rm -f #{stemcell_file_name} && wget '#{LIGHT_STEMCELL_URL}'")
+          unless ENV.has_key? "BOSH_OVERRIDE_LIGHT_STEMCELL_URL"
+            puts("Checking for stemcell...")
+            sh("bosh -n stemcells | tail -1 | grep 'No stemcells'")
+            puts("Missing stemcell uploading...")
+          end
+          stemcell_file_name = light_stemcell_url.split("/").last
+          sh("cd /tmp && rm -f #{stemcell_file_name} && wget '#{light_stemcell_url}'")
           sh("bosh -n upload stemcell /tmp/#{stemcell_file_name}")
         rescue Exception => e
           raise e unless e.message =~ /stemcells/
@@ -61,6 +64,10 @@ module BootstrapVmcPlugin
 
       def self.sh(cmd)
         raise "Failed to run: #{cmd}" unless system(cmd)
+      end
+
+      def self.light_stemcell_url
+        ENV["BOSH_OVERRIDE_LIGHT_STEMCELL_URL"] || DEFAULT_LIGHT_STEMCELL_URL
       end
     end
   end
