@@ -23,7 +23,7 @@ module BootstrapVmcPlugin
             puts("Missing stemcell uploading...")
           end
           stemcell_file_name = light_stemcell_url.split("/").last
-          sh("cd /tmp && rm -f #{stemcell_file_name} && wget '#{light_stemcell_url}'")
+          sh("cd /tmp && rm -f #{stemcell_file_name} && wget '#{light_stemcell_url}' --no-check-certificate")
           sh("bosh -n upload stemcell /tmp/#{stemcell_file_name}")
         rescue Exception => e
           raise e unless e.message =~ /stemcells/

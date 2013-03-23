@@ -79,7 +79,7 @@ describe BootstrapVmcPlugin::Infrastructure::Aws do
           end
 
           it 'downloads the latest stemcell from S3' do
-            mock(described_class).sh("cd /tmp && rm -f last_successful_bosh-stemcell_light.tgz && wget 'http://bosh-jenkins-artifacts.s3.amazonaws.com/last_successful_bosh-stemcell_light.tgz'")
+            mock(described_class).sh("cd /tmp && rm -f last_successful_bosh-stemcell_light.tgz && wget 'http://bosh-jenkins-artifacts.s3.amazonaws.com/last_successful_bosh-stemcell_light.tgz' --no-check-certificate")
           end
 
           it 'uploads the lastest stemcell' do
@@ -95,7 +95,7 @@ describe BootstrapVmcPlugin::Infrastructure::Aws do
           end
 
           it 'skips downloading the stemcell from S3' do
-            dont_allow(described_class).sh("cd /tmp && rm -f last_successful_bosh-stemcell_light.tgz && wget 'http://bosh-jenkins-artifacts.s3.amazonaws.com/last_successful_bosh-stemcell_light.tgz'")
+            dont_allow(described_class).sh("cd /tmp && rm -f last_successful_bosh-stemcell_light.tgz && wget 'http://bosh-jenkins-artifacts.s3.amazonaws.com/last_successful_bosh-stemcell_light.tgz' --no-check-certificate")
           end
 
           it 'skips uploading the stemcell' do
@@ -114,7 +114,7 @@ describe BootstrapVmcPlugin::Infrastructure::Aws do
         end
 
         it 'downloads the stemcell at the given URL' do
-          mock(described_class).sh("cd /tmp && rm -f stemcell.tgz && wget 'http://stemcells-r-us.com/stemcell.tgz'")
+          mock(described_class).sh("cd /tmp && rm -f stemcell.tgz && wget 'http://stemcells-r-us.com/stemcell.tgz' --no-check-certificate")
         end
 
         it 'uploads the latest stemcell' do
