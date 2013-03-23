@@ -25,7 +25,7 @@ networks:
 - name: cf
   type: manual
   subnets:
-  - range: 10.10.2.0/24
+  - range: 10.10.2.0/23
     name: default_unused
     reserved:
     - 10.10.2.2 - 10.10.2.9
@@ -41,7 +41,7 @@ networks:
 - name: services
   type: manual
   subnets:
-  - range: 10.10.4.0/24
+  - range: 10.10.4.0/23
     name: default_unused
     reserved:
     - 10.10.4.2 - 10.10.4.9
@@ -303,16 +303,16 @@ jobs:
       token: postgresql-token
       cc_api_version: v2
       check_orphan_interval: 7200
-      supported_versions: ["9.1"]
+      supported_versions: ["9.2"]
       version_aliases:
-        current: "9.1"
+        current: "9.2"
     rabbit_gateway:
       token: rabbitmq-token
       cc_api_version: v2
       default_plan: "100"
-      supported_versions: ["2.8"]
+      supported_versions: ["3.0"]
       version_aliases:
-        current: "2.8"
+        current: "3.0"
     redis_gateway:
       token: redis-token
       cc_api_version: v2
@@ -389,8 +389,8 @@ jobs:
       health_check_port: 2346
       warden_socket_path: '/tmp/warden_mongodb.sock'
     rabbit_node:
-      supported_versions: ["2.8"]
-      default_version: "2.8"
+      supported_versions: ["3.0"]
+      default_version: "3.0"
       health_check_port: 2347
       warden_socket_path: '/tmp/warden_rabbit.sock'
     mysql_node:
@@ -402,8 +402,8 @@ jobs:
       health_check_port: 2348
       warden_socket_path: '/tmp/warden_mysql.sock'
     postgresql_node:
-      supported_versions: ["9.1"]
-      default_version: "9.1"
+      supported_versions: ["9.2"]
+      default_version: "9.2"
       health_check_port: 2349
       warden_socket_path: '/tmp/warden_postgresql.sock'
       production: true
