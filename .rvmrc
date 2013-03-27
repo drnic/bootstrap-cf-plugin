@@ -1,1 +1,1 @@
-rvm --create 1.9.3@bootstrap-vmc-plugin
+rvm --create 1.9.3@bootstrap-cf-plugin

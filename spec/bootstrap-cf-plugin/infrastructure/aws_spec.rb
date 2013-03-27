@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe BootstrapVmcPlugin::Infrastructure::Aws do
+describe BootstrapCfPlugin::Infrastructure::Aws do
   context "::bootstrap" do
     let(:cf_release_path) { "/tmp/spec-cf-release" }
     let!(:working_path) do
@@ -11,13 +11,13 @@ describe BootstrapVmcPlugin::Infrastructure::Aws do
     end
     let(:execute_command) do
       Dir.chdir(working_path) do
-        BootstrapVmcPlugin::Infrastructure::Aws.bootstrap
+        BootstrapCfPlugin::Infrastructure::Aws.bootstrap
       end
     end
 
     before do
       FileUtils.rm_rf(cf_release_path)
-      any_instance_of(BootstrapVmcPlugin::Generator, :director_uuid => "12345-12345-12345")
+      any_instance_of(BootstrapCfPlugin::Generator, :director_uuid => "12345-12345-12345")
       stub(described_class).cf_release_path { cf_release_path }
       stub(described_class).sh
     end
@@ -153,7 +153,7 @@ describe BootstrapVmcPlugin::Infrastructure::Aws do
         end
 
         it 'skips generating the manifest file - cf-aws.yml' do
-          dont_allow(BootstrapVmcPlugin::Generator).new
+          dont_allow(BootstrapCfPlugin::Generator).new
         end
 
         it 'skips appling the template to the manifest file with bosh diff' do

@@ -287,7 +287,7 @@ jobs:
     static_ips:
     - <%= ip( 2, 'services.static') %>
   properties:
-    uaa_client_id: "vmc"
+    uaa_client_id: "cf"
     uaa_endpoint: http://uaa.<%= find("properties.domain") %>
     uaa_client_auth_credentials:
       username: admin
@@ -330,7 +330,7 @@ jobs:
     marketplace_gateway:
       marketplace: appdirect
       cc_api_version: v2
-      uaa_client_id: "vmc"
+      uaa_client_id: "cf"
       uaa_endpoint: http://uaa.<%= find("properties.domain") %>
       uaa_client_auth_credentials:
         username: admin
@@ -684,7 +684,7 @@ properties:
     client:
       autoapprove:
         - cf
-        - vmc
+        - cf
         - my
         - portal
         - micro
@@ -716,7 +716,7 @@ properties:
         redirect-uri: http://rewritten-later.cloudfoundry.com/whatever
         override: true
         autoapprove: true
-      vmc:
+      cf:
         override: true
         authorized-grant-types: password,implicit
         authorities: uaa.none

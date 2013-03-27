@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe BootstrapVmcPlugin::DirectorCheck do
+describe BootstrapCfPlugin::DirectorCheck do
   subject(:check_director) { described_class.check }
 
   describe "::check" do

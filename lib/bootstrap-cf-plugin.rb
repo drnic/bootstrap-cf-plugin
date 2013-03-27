@@ -1,10 +1,10 @@
 require "erb"
-require "vmc"
+require "cf"
 require "common/version"
-require "bootstrap-vmc-plugin/generator"
-require "bootstrap-vmc-plugin/plugin"
-require "bootstrap-vmc-plugin/director_check"
-require "bootstrap-vmc-plugin/infrastructure/aws"
+require "bootstrap-cf-plugin/generator"
+require "bootstrap-cf-plugin/plugin"
+require "bootstrap-cf-plugin/director_check"
+require "bootstrap-cf-plugin/infrastructure/aws"
 require 'net/http'
 
 require 'cli/config'  # for load_yaml_file

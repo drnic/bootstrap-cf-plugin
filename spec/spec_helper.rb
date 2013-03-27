@@ -1,6 +1,6 @@
-require "bootstrap-vmc-plugin"
+require "bootstrap-cf-plugin"
 require "cfoundry/test_support"
-require "vmc/test_support"
+require "cf/test_support"
 
 def asset(filename)
   File.expand_path("../assets/#{filename}", __FILE__)

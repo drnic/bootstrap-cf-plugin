@@ -1,4 +1,4 @@
-module BootstrapVmcPlugin
+module BootstrapCfPlugin
   module Infrastructure
     class Aws
       DEFAULT_LIGHT_STEMCELL_URL = "http://bosh-jenkins-artifacts.s3.amazonaws.com/last_successful_bosh-stemcell_light.tgz"
@@ -54,7 +54,7 @@ module BootstrapVmcPlugin
       end
 
       def self.generate_stub
-        BootstrapVmcPlugin::Generator.new("aws_vpc_receipt.yml", "aws_rds_receipt.yml").save
+        BootstrapCfPlugin::Generator.new("aws_vpc_receipt.yml", "aws_rds_receipt.yml").save
       end
 
       private

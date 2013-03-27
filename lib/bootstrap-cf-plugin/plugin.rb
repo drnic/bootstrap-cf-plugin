@@ -1,14 +1,14 @@
-require "bootstrap-vmc-plugin"
+require "bootstrap-cf-plugin"
 
-module BootstrapVmcPlugin
-  class Plugin < VMC::CLI
+module BootstrapCfPlugin
+  class Plugin < CF::CLI
     STATIC_TOKENS = [{provider: 'sendgrid-dev', label: 'smtp', token: 'ad_smtp_sendgriddev_token'}]
     def precondition
       # skip all default preconditions
     end
 
     def lookup_infrastructure_class(infrastructure)
-      infrastructure_module = Kernel.const_get("BootstrapVmcPlugin").const_get("Infrastructure")
+      infrastructure_module = Kernel.const_get("BootstrapCfPlugin").const_get("Infrastructure")
       infrastructure_module.const_get(infrastructure) if infrastructure_module.const_defined?(infrastructure)
     end
 

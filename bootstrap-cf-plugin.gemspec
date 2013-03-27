@@ -2,13 +2,13 @@
 # Copyright (c) 2009-2012 VMware, Inc.
 
 Gem::Specification.new do |s|
-  s.name         = "bootstrap-vmc-plugin"
+  s.name         = "bootstrap-cf-plugin"
   s.version      = '0.0.1'
   s.platform     = Gem::Platform::RUBY
-  s.summary      = "VMC Bootstrap"
-  s.description  = "VMC command line tool to bootstrap a CF deployment on top of BOSH"
+  s.summary      = "CF Bootstrap"
+  s.description  = "CF command line tool to bootstrap a CF deployment on top of BOSH"
   s.author       = "VMware"
-  s.homepage      = 'https://github.com/cloudfoundry/bootstrap-vmc-plugin'
+  s.homepage      = 'https://github.com/cloudfoundry/bootstrap-cf-plugin'
   s.license       = 'Apache 2.0'
   s.email         = "support@cloudfoundry.com"
   s.required_ruby_version = Gem::Requirement.new(">= 1.9.3")
@@ -17,5 +17,5 @@ Gem::Specification.new do |s|
   s.require_path = "lib"
 
   s.add_dependency "bosh_aws_bootstrap", "~>1.5.0.pre.3"
-  s.add_dependency "vmc", "~>0.5"
+  s.add_dependency "cf", "~>0.6"
 end

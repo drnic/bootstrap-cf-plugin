@@ -1,9 +1,9 @@
 require 'spec_helper'
 
-describe BootstrapVmcPlugin::Generator do
+describe BootstrapCfPlugin::Generator do
   let(:aws_receipt_file) { asset 'aws_receipt.yml' }
   let(:rds_receipt_file) { asset 'rds_receipt.yml' }
-  subject { BootstrapVmcPlugin::Generator.new(aws_receipt_file, rds_receipt_file) }
+  subject { BootstrapCfPlugin::Generator.new(aws_receipt_file, rds_receipt_file) }
 
   it "should generate the expected YAML output" do
     mock(subject).director_uuid { "12345-12345-12345" }

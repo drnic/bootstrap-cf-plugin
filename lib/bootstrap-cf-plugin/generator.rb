@@ -1,4 +1,4 @@
-module BootstrapVmcPlugin
+module BootstrapCfPlugin
   class Generator
     def initialize(aws_receipt_file, rds_receipt_file)
       @aws_receipt = load_yaml_file(aws_receipt_file)

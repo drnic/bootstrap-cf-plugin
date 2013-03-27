@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-command BootstrapVmcPlugin::Plugin do
+command BootstrapCfPlugin::Plugin do
   let(:client) { fake_client }
   let(:mongodb_token) { 'mongo-secret' }
   let(:mysql_token) { 'mysql-secret' }
@@ -9,8 +9,8 @@ command BootstrapVmcPlugin::Plugin do
 
 
   before do
-    stub(BootstrapVmcPlugin::DirectorCheck).check
-    stub(BootstrapVmcPlugin::Infrastructure::Aws).bootstrap
+    stub(BootstrapCfPlugin::DirectorCheck).check
+    stub(BootstrapCfPlugin::Infrastructure::Aws).bootstrap
 
     stub_invoke :logout
     stub_invoke :login, anything
@@ -66,7 +66,7 @@ command BootstrapVmcPlugin::Plugin do
   end
 
   context "when the infrastructure is not AWS" do
-    subject { vmc %W[bootstrap awz] }
+    subject { cf %W[bootstrap awz] }
 
     it "should throw an error when the infrastructure is not AWS" do
       expect {
@@ -76,12 +76,12 @@ command BootstrapVmcPlugin::Plugin do
   end
 
   context "when the infrastructure is AWS" do
-    subject { vmc %W[bootstrap aws] }
+    subject { cf %W[bootstrap aws] }
 
     describe "verifying access to director" do
       it "should blow up if unable to get director status" do
-        stub(BootstrapVmcPlugin::DirectorCheck).check { raise "some error message" }
-        dont_allow(BootstrapVmcPlugin::Infrastructure::Aws).bootstrap
+        stub(BootstrapCfPlugin::DirectorCheck).check { raise "some error message" }
+        dont_allow(BootstrapCfPlugin::Infrastructure::Aws).bootstrap
         expect {
           subject
         }.to raise_error "some error message"
@@ -89,22 +89,22 @@ command BootstrapVmcPlugin::Plugin do
     end
 
     it "should invoke AWS.bootstrap when infrastructure is AWS" do
-      mock(BootstrapVmcPlugin::Infrastructure::Aws).bootstrap
+      mock(BootstrapCfPlugin::Infrastructure::Aws).bootstrap
       subject
     end
 
-    it 'targets the VMC client' do
+    it 'targets the CF client' do
       mock_invoke :target, :url => "http://example.com"
       subject
     end
 
-    it 'logs out and logs in into the VMC' do
+    it 'logs out and logs in into the CF' do
       mock_invoke :logout
       mock_invoke :login, :username => 'user', :password => 'da_password'
       subject
     end
 
-    it 'VMC creates an Organization and a Space' do
+    it 'CF creates an Organization and a Space' do
       mock_invoke :create_org, :name => "bootstrap-org"
       subject
     end
@@ -122,7 +122,7 @@ command BootstrapVmcPlugin::Plugin do
 
       let(:bootstrap_org) { fake :organization, :name => "bootstrap-org" }
 
-      it 'VMC creates a Space' do
+      it 'CF creates a Space' do
         mock_invoke :create_space, :organization => bootstrap_org, :name => "bootstrap-space"
         subject
       end
@@ -134,7 +134,7 @@ command BootstrapVmcPlugin::Plugin do
       let(:bootstrap_org) { fake :organization, :name => "bootstrap-org" }
       let(:bootstrap_space) { fake :space, :name => "bootstrap-space" }
 
-      it 'VMC targets the org and space' do
+      it 'CF targets the org and space' do
         mock_invoke :target, :url => "http://example.com", :organization => bootstrap_org, :space => bootstrap_space
         subject
       end

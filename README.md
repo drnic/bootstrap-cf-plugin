@@ -1,2 +1,2 @@
-bootstrap-vmc-plugin
+bootstrap-cf-plugin
 ====================
