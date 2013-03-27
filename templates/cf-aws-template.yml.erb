@@ -160,15 +160,6 @@ jobs:
   properties:
     db: uaadb
 
-- name: vcap_redis
-  template: vcap_redis
-  instances: 1
-  resource_pool: common
-  networks:
-  - name: cf
-    static_ips:
-    - <%= ip( 4, 'cf.static') %>
-
 - name: uaa
   template: uaa
   instances: 1
@@ -475,12 +466,6 @@ properties:
     cc_partition: default
 
   ccng: *cc
-
-  vcap_redis:
-    address: <%= ip( 4, 'cf.static') %>
-    port: 3456
-    password: "c1oudc0wc1oudc0w"
-    maxmemory: 500000000
 
   router:
     port: 8081
