@@ -148,17 +148,14 @@ jobs:
     static_ips:
     - <%= ip( 2, 'cf.static') %>
 
-- name: uaadb
-  template: postgres
+- name: vcap_redis
+  template: vcap_redis
   instances: 1
   resource_pool: common
   networks:
   - name: cf
     static_ips:
-    - <%= ip( 3, 'cf.static') %>
-  persistent_disk: 2048
-  properties:
-    db: uaadb
+    - <%= ip( 4, 'cf.static') %>
 
 - name: uaa
   template: uaa
@@ -466,6 +463,12 @@ properties:
     cc_partition: default
 
   ccng: *cc
+
+  vcap_redis:
+    address: <%= ip( 4, 'cf.static') %>
+    port: 3456
+    password: "c1oudc0wc1oudc0w"
+    maxmemory: 500000000
 
   router:
     port: 8081
