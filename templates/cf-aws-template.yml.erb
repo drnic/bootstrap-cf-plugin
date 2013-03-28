@@ -426,15 +426,7 @@ properties:
   ccdb_ng: *ccdb
 
   uaadb:
-    address: <%= ip( 3, 'cf.static') %>
-    port: 2544
-    roles:
-    - tag: admin
-      name: uaa
-      password: "c1oudc0wc1oudc0w"
-    databases:
-    - tag: uaa
-      name: uaa
+    <%= find("properties.uaadb").to_yaml.split("\n")[1..-1].map{|line| " " * 4 + line}.join("\n").gsub(/\A\s{4}/, "") %>
 
   cc: &cc
     srv_api_uri: http://ccng.<%= find("properties.domain") %>
