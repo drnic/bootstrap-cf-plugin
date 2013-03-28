@@ -2,7 +2,12 @@ require "bootstrap-cf-plugin"
 
 module BootstrapCfPlugin
   class Plugin < CF::CLI
-    STATIC_TOKENS = [{provider: 'sendgrid-dev', label: 'smtp', token: 'ad_smtp_sendgriddev_token'}]
+    STATIC_TOKENS = [
+      {provider: 'sendgrid-dev', label: 'smtp', token: 'ad_smtp_sendgriddev_token'},
+      {provider: 'mongolab-dev', label: 'mongodb', token: 'ad_mongodb_mongolabdev_token'},
+      {provider: 'redistogo-dev', label: 'redis', token: 'ad_redis_redistogodev_token'}
+    ]
+
     def precondition
       # skip all default preconditions
     end
