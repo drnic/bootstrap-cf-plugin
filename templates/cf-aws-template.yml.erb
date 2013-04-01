@@ -267,6 +267,7 @@ jobs:
   - marketplace_gateway
   - rabbit_gateway
   - oauth2_gateway
+  - servicesmgmt
   instances: 1
   resource_pool: services-smallfast
   persistent_disk: 7168
@@ -705,6 +706,16 @@ properties:
         authorized-grant-types: password,implicit
         authorities: uaa.none
         scope: cloud_controller.read,cloud_controller.write,openid,password.write,cloud_controller.admin,scim.read,scim.write
+      servicesmgmt:
+        secret: serivcesmgmtsecret
+        scope: openid,cloud_controller.read,cloud_controller.write
+        authorities: uaa.resource,oauth.service,clients.read,clients.write,clients.secret
+        authorized-grant-types: authorization_code,client_credentials,password,implicit
+        id: servicesmgmt
+        redirect-uri: http://servicesmgmt.stevenson.cf-app.com/auth/cloudfoundry/callback
+        override: true
+        autoapprove: true
+
     scim:
       users:
       - admin|the_admin_pw|scim.write,scim.read,openid,cloud_controller.admin
