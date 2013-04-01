@@ -675,6 +675,7 @@ properties:
         authorities: oauth.login
         secret: HZtd2FyZS5jb20iL
         authorized-grant-types: authorization_code,client_credentials,refresh_token
+        redirect-uri: http://login.<%= find("properties.domain") %>
       portal:
         id: portal
         scope: scim.write,scim.read,openid,cloud_controller.read,cloud_controller.write
@@ -714,7 +715,7 @@ properties:
         authorities: uaa.resource,oauth.service,clients.read,clients.write,clients.secret
         authorized-grant-types: authorization_code,client_credentials,password,implicit
         id: servicesmgmt
-        redirect-uri: http://servicesmgmt.stevenson.cf-app.com/auth/cloudfoundry/callback
+        redirect-uri: http://servicesmgmt.<%= find("properties.domain") %>/auth/cloudfoundry/callback
         override: true
         autoapprove: true
 
