@@ -6,7 +6,7 @@ module BootstrapCfPlugin
       def self.bootstrap
         begin
           puts("Checking for release...")
-          sh("bosh -n releases | tail -1 | grep 'No releases'")
+          sh("bosh -n releases | grep -v 'bosh-release'")
           puts("Missing release, creating...")
           sh("git clone http://github.com/cloudfoundry/cf-release #{cf_release_path}") unless Dir.exist?(cf_release_path)
           sh("cd #{cf_release_path} && ./update")
@@ -32,7 +32,7 @@ module BootstrapCfPlugin
 
         begin
           puts("Checking for a cf deployment...")
-          sh("bosh -n deployments | tail -1 | grep 'No deployments'")
+          sh("bosh -n deployments | grep -v 'cf-#{generator.name}'")
 
           puts("Missing deployment, creating...")
           generate_stub
@@ -54,7 +54,7 @@ module BootstrapCfPlugin
       end
 
       def self.generate_stub
-        BootstrapCfPlugin::Generator.new("aws_vpc_receipt.yml", "aws_rds_receipt.yml").save
+        generator.save
       end
 
       private
@@ -68,6 +68,10 @@ module BootstrapCfPlugin
 
       def self.light_stemcell_url
         ENV["BOSH_OVERRIDE_LIGHT_STEMCELL_URL"] || DEFAULT_LIGHT_STEMCELL_URL
+      end
+
+      def self.generator
+        @generator ||= BootstrapCfPlugin::Generator.new("aws_vpc_receipt.yml", "aws_rds_receipt.yml")
       end
     end
   end

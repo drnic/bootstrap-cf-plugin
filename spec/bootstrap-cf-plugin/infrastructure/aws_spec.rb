@@ -29,7 +29,7 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
     describe "releases" do
       context "if release doesn't exist" do
         before do
-          mock(described_class).sh("bosh -n releases | tail -1 | grep 'No releases'") { 0 }
+          mock(described_class).sh("bosh -n releases | grep -v 'bosh-release'") { 0 }
         end
 
         it 'checkouts the cf-release from github when not present' do
@@ -52,8 +52,8 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
 
       context "if the release already exists" do
         before do
-          stub(described_class).sh("bosh -n releases | tail -1 | grep 'No releases'") do
-            raise "Failed to run: bosh -n releases | tail -1 | grep 'No releases'"
+          stub(described_class).sh("bosh -n releases | grep -v 'bosh-release'") do
+            raise "Failed to run: bosh -n releases | grep -v 'bosh-release'"
           end
         end
 
@@ -126,7 +126,7 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
     describe "deployments" do
       context "if the deployment doesn't exist" do
         before do
-          stub(described_class).sh("bosh -n deployments | tail -1 | grep 'No deployments'") { 0 }
+          stub(described_class).sh("bosh -n deployments | grep -v 'cf-deployment'") { 0 }
         end
 
         it 'generates the manifest file - cf-aws.yml' do
@@ -147,8 +147,10 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
 
       context "if the deployment does exist" do
         before do
-          stub(described_class).sh("bosh -n deployments | tail -1 | grep 'No deployments'") do
-            raise "Failed to run: bosh -n deployments | tail -1 | grep  'No deployments'"
+          fake_generator = stub(stub!.save.subject).name { "deployment" }
+          stub(described_class).generator { fake_generator }
+          stub(described_class).sh("bosh -n deployments | grep -v 'cf-deployment'") do
+            raise "Failed to run: bosh -n deployments | grep -v 'cf-deployment'"
           end
         end
 
