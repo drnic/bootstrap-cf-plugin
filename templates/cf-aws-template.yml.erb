@@ -256,9 +256,9 @@ jobs:
       token: mysql-token
       cc_api_version: v2
       check_orphan_interval: 7200
-      supported_versions: ["5.1"]
+      supported_versions: ["5.5"]
       version_aliases:
-        current: "5.1"
+        current: "5.5"
     postgresql_gateway:
       token: postgresql-token
       cc_api_version: v2
@@ -363,7 +363,7 @@ jobs:
       password: "c1oudc0wc1oudc0w"
       max_db_size: 256
       default_version: "5.5"
-      supported_versions: ["5.1"]
+      supported_versions: ["5.5"]
       health_check_port: 2348
       warden_socket_path: '/tmp/warden_mysql.sock'
     postgresql_node:
