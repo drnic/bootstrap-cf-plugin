@@ -116,19 +116,6 @@ resource_pools:
 jobs:
 # ====================== BEGIN CF JOBS =========================
 
-- name: debian_nfs_server
-  template: debian_nfs_server
-  instances: 1
-  resource_pool: common
-  persistent_disk: 8192
-  properties:
-    debian_nfs_server:
-      no_root_squash: true
-  networks:
-  - name: cf
-    static_ips:
-    - <%= ip( 0, 'cf.static') %>
-
 - name: syslog_aggregator
   template: syslog_aggregator
   instances: 1
@@ -224,22 +211,6 @@ jobs:
     - name: cf
 
 # ====================== BEGIN SERVICES JOBS =========================
-
-- name: services_nfs
-  template: debian_nfs_server
-  instances: 1
-  resource_pool: services-small
-  persistent_disk: 8192
-  properties:
-    debian_nfs_server:
-      no_root_squash: true
-    nfs_server:
-      address: <%= ip( 0, 'services.static') %>
-      network: 10.10.4.0/23
-  networks:
-  - name: services
-    static_ips:
-    - <%= ip( 0, 'services.static') %>
 
 - name: services_redis
   template: vcap_redis
@@ -486,10 +457,6 @@ properties:
     disk_overcommit_factor: 4
     num_instances: 256
 
-  nfs_server:
-    address: <%= ip( 0, 'cf.static') %>
-    network: 10.10.2.0/23
-
   service_lifecycle:
     download_url: service-serialization.<%= find("properties.domain") %>
     mount_point: /var/vcap/service_lifecycle
@@ -498,9 +465,6 @@ properties:
       host: <%= ip( 1, 'services.static') %>
       port: 3456
       password: bt3FXngo
-    nfs_server:
-      address: <%= ip( 0, 'services.static') %>
-      export_dir: /var/vcap/store/shared
     serialization_data_server:
     - 0.serialization-data-server.default.<%= find("name") %>.bosh
 
