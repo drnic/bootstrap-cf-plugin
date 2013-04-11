@@ -58,7 +58,7 @@ networks:
 resource_pools:
 - name: common
   network: cf
-  size: 9
+  size: 8
   stemcell:
     name: bosh-stemcell
     version: latest
@@ -87,7 +87,7 @@ resource_pools:
     - cfrouter
 - name: services-small
   network: services
-  size: 2
+  size: 1
   stemcell:
     name: bosh-stemcell
     version: latest
@@ -359,8 +359,8 @@ jobs:
       health_check_port: 2347
       warden_socket_path: '/tmp/warden_rabbit.sock'
     mysql_node:
-      external_db:
-        address: "<%= find("properties.mysql-service-public.address") %>"
+      external_dbs:
+      - address: "<%= find("properties.mysql-service-public.address") %>"
         port: <%= find("properties.mysql-service-public.port") %>
         <%- role = find("properties.mysql-service-public.roles").detect{|hash| hash['tag'] == 'admin'} -%>
         user: "<%= role['name'] %>"
