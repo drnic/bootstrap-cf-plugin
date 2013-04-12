@@ -36,7 +36,7 @@ module BootstrapCfPlugin
 
           puts("Missing deployment, creating...")
           generate_stub
-          template_file ||= File.expand_path(File.join(File.dirname(__FILE__),'..','..','..','templates','cf-aws-template.yml.erb'))
+          template_file ||= bosh_diff_template_file
 
           sh("bosh -n deployment cf-aws.yml")
           sh("bosh -n diff #{template_file}")
@@ -59,7 +59,11 @@ module BootstrapCfPlugin
 
       private
       def self.cf_release_path
-        '/tmp/cf-release'
+        File.join(Dir.tmpdir, "cf-release")
+      end
+
+      def self.bosh_diff_template_file
+        File.join(cf_release_path,'templates','cf-aws-template.yml.erb')
       end
 
       def self.sh(cmd)
