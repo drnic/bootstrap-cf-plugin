@@ -28,7 +28,7 @@ module BootstrapCfPlugin
         sh("cd #{cf_release_path} && bosh -n create release --force && bosh -n upload release")
 
         puts("Creating deployment manifest #{manifest_name}")
-        generate_stub(manifest_name, upstream_manifest, release_name)
+        generate_stub(manifest_name, upstream_manifest)
         template_file ||= File.join(cf_release_path, 'templates', 'cf-aws-template.yml.erb')
 
         sh("bosh -n deployment #{manifest_name}")
@@ -65,8 +65,8 @@ module BootstrapCfPlugin
         end
       end
 
-      def self.generate_stub(manifest_name, upstream_manifest, release_name)
-        generator.save(manifest_name, upstream_manifest, release_name)
+      def self.generate_stub(manifest_name, upstream_manifest)
+        generator.save(manifest_name, upstream_manifest)
       end
 
       private

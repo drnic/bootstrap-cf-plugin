@@ -10,7 +10,7 @@ describe BootstrapCfPlugin::Generator do
   it "should generate the expected YAML output" do
     mock(subject).director_uuid { "12345-12345-12345" }
     Dir.chdir("/tmp") do
-      subject.save('cf-aws.yml', nil, "bosh-release")
+      subject.save('cf-aws.yml', nil)
       YAML.load_file('cf-aws.yml').should == YAML.load_file(asset 'expected_cf_stub.yml')
     end
   end
@@ -26,7 +26,7 @@ describe BootstrapCfPlugin::Generator do
 
     context "when shared manifest is provided" do
       it "merges uaa scim users into current manifest" do
-        properties = subject.to_hash(upstream_manifest, "name")["properties"]
+        properties = subject.to_hash("cf-aws.yml", upstream_manifest)["properties"]
         properties.should include({
           "uaa" => {
             "scim" => {
@@ -39,13 +39,13 @@ describe BootstrapCfPlugin::Generator do
         })
       end
     end
+  end
 
-    it "sets release name" do
-      subject.to_hash(upstream_manifest, "release_name").should include(
-       {
-         "releases" => [{"name" => "release_name", "version" => "latest"}]
-       }
-      )
+  describe "manifest_stub" do
+    let(:manifest_name) { "some-manifest.yml"}
+
+    it "sets the stub name" do
+      subject.manifest_stub(manifest_name).should match /templates\/some-manifest-stub.yml.erb$/
     end
   end
 end
