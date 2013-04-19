@@ -4,6 +4,38 @@ module BootstrapCfPlugin
       DEFAULT_LIGHT_STEMCELL_URL = "http://bosh-jenkins-artifacts.s3.amazonaws.com/last_successful_bosh-stemcell_light.tgz"
 
       def self.bootstrap(template_file = nil)
+        upload_stemcell
+        deploy_release("cf-release", "cf-aws.yml", nil, template_file)
+        deploy_release("cf-services-release", "cf-services-aws.yml", "cf-aws.yml", template_file)
+
+        puts "INFO: bootstrap complete"
+        sh("bosh -n status")
+      end
+
+      def self.deploy_release(release_name, manifest_name, upstream_manifest, template_file)
+        cf_release_path = cf_release_path(release_name)
+        git_url = "http://github.com/cloudfoundry/#{release_name}"
+
+        puts("Creating release #{release_name}")
+        puts "git clone #{git_url} #{cf_release_path}"
+
+        sh("git clone #{git_url} #{cf_release_path}") unless Dir.exist?(cf_release_path)
+        dev_config_path = File.join(cf_release_path, "config", "dev.yml")
+        unless File.exists?(dev_config_path)
+          File.open(dev_config_path, "w") { |f| f.write("---\ndev_name: #{release_name}") }
+        end
+        sh("cd #{cf_release_path} && ./update")
+        sh("cd #{cf_release_path} && bosh -n create release --force && bosh -n upload release")
+
+        puts("Creating deployment manifest #{manifest_name}")
+        generate_stub(manifest_name, upstream_manifest, release_name)
+        template_file ||= File.join(cf_release_path, 'templates', 'cf-aws-template.yml.erb')
+
+        sh("bosh -n deployment #{manifest_name}")
+        sh("bosh -n diff #{template_file}")
+
+        puts("Running bosh deploy...")
+        sh("bosh -n deploy")
         begin
           puts("Checking for release...")
           sh("bosh -n releases | grep -v 'bosh-release'")
@@ -15,7 +47,9 @@ module BootstrapCfPlugin
           raise e unless e.message =~ /releases/
           puts("Using found release")
         end
+      end
 
+      def self.upload_stemcell
         begin
           unless ENV.has_key? "BOSH_OVERRIDE_LIGHT_STEMCELL_URL"
             puts("Checking for stemcell...")
@@ -29,41 +63,15 @@ module BootstrapCfPlugin
           raise e unless e.message =~ /stemcells/
           puts("Using found stemcell")
         end
-
-        begin
-          puts("Checking for a cf deployment...")
-          sh("bosh -n deployments | grep -v 'cf-#{generator.name}'")
-
-          puts("Missing deployment, creating...")
-          generate_stub
-          template_file ||= bosh_diff_template_file
-
-          sh("bosh -n deployment cf-aws.yml")
-          sh("bosh -n diff #{template_file}")
-        rescue Exception => e
-          raise e unless e.message =~ /deployments/
-          puts("Using found deployment")
-        end
-
-        puts("Running bosh deploy...")
-        sh("bosh -n deploy")
-        begin
-          puts "INFO: bootstrap complete"
-          sh("bosh -n status")
-        end
       end
 
-      def self.generate_stub
-        generator.save
+      def self.generate_stub(manifest_name, upstream_manifest, release_name)
+        generator.save(manifest_name, upstream_manifest, release_name)
       end
 
       private
-      def self.cf_release_path
-        File.join(Dir.tmpdir, "cf-release")
-      end
-
-      def self.bosh_diff_template_file
-        File.join(cf_release_path,'templates','cf-aws-template.yml.erb')
+      def self.cf_release_path(release_name)
+        File.join(Dir.tmpdir, release_name)
       end
 
       def self.sh(cmd)

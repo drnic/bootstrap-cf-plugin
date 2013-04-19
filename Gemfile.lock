@@ -11,11 +11,11 @@ GEM
   remote: https://s3.amazonaws.com/bosh-jenkins-gems/
   specs:
     addressable (2.3.4)
+    admin-cf-plugin (0.2.0)
+      cfoundry (~> 0.6.0)
     agent_client (1.5.0.pre.479)
       httpclient (= 2.2.4)
       yajl-ruby (~> 1.1.0)
-    admin-cf-plugin (0.2.0)
-      cfoundry (~> 0.6.0)
     archive-tar-minitar (0.5.2)
     aws-sdk (1.8.5)
       json (~> 1.4)

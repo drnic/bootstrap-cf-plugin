@@ -43,9 +43,14 @@ module BootstrapCfPlugin
       @aws_receipt["aws"]["secret_access_key"]
     end
 
-    def to_hash
+    def to_hash(upstream_manifest, release_name)
       hash = YAML.load ERB.new(File.read(File.expand_path('../../../templates/cf-aws-stub.yml.erb', __FILE__)), 0, "-%<>").result(binding)
+      hash["releases"][0]["name"] = release_name
       hash["properties"].merge!(@rds_receipt["deployment_manifest"]["properties"])
+
+      if upstream_manifest
+        hash["properties"].merge!(shared_properties(upstream_manifest))
+      end
 
       # this is a hack until the ccdb_ng yaml reference is removed from the vpc template
       # (the yaml marshalling will generate a ccdb_ng: *ccdb line)
@@ -53,10 +58,26 @@ module BootstrapCfPlugin
       hash
     end
 
-    def save
-      File.open("cf-aws.yml", "w+") do |f|
-        f.write(YAML.dump(to_hash))
+    def save(manifest_name, upstream_manifest, release_name)
+      File.open(manifest_name, "w+") do |f|
+        f.write(YAML.dump(to_hash(upstream_manifest, release_name)))
       end
+    end
+
+    private
+
+    def shared_properties(shared_manifest)
+      upstream_properties = load_yaml_file(shared_manifest)
+      return {} unless upstream_properties["properties"] &&
+        upstream_properties["properties"]["uaa"] &&
+        upstream_properties["properties"]["uaa"]["scim"]
+      {
+        "uaa"=> {
+          "scim"=> {
+            "users"=> upstream_properties["properties"]["uaa"]["scim"]["users"]
+          }
+        }
+      }
     end
   end
 end

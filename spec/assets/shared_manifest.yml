@@ -1,0 +1,7 @@
+---
+properties:
+  uaa:
+    scim:
+      users:
+      - admin|random1passwd|scim.write,scim.read,openid,cloud_controller.admin
+      - service|other4psword|scim.write,scim.read,openid,cloud_controller.admin
