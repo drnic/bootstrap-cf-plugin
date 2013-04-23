@@ -2,6 +2,7 @@ PATH
   remote: .
   specs:
     bootstrap-cf-plugin (0.0.1)
+      admin-cf-plugin (~> 0.2)
       bosh_cli_plugin_aws (~> 1.5.0.pre.3)
       cf (~> 0.6)
 
@@ -13,6 +14,8 @@ GEM
     agent_client (1.5.0.pre.479)
       httpclient (= 2.2.4)
       yajl-ruby (~> 1.1.0)
+    admin-cf-plugin (0.2.0)
+      cfoundry (~> 0.6.0)
     archive-tar-minitar (0.5.2)
     aws-sdk (1.8.5)
       json (~> 1.4)
