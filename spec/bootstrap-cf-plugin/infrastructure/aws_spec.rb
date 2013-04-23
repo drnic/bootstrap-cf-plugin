@@ -37,18 +37,18 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
 
         it 'checkouts the cf-release from github when not present' do
           stub(Dir).tmpdir { temp_dir }
-          mock(described_class).sh("git clone http://github.com/cloudfoundry/cf-release #{cf_release_path}")
+          mock(described_class).sh("git clone -b release-candidate http://github.com/cloudfoundry/cf-release #{cf_release_path}")
           run_bootstrap_command
         end
 
         it 'does not checkout the cf-release when present' do
           FileUtils.mkdir_p(cf_release_path)
-          dont_allow(described_class).sh("git clone http://github.com/cloudfoundry/cf-release #{cf_release_path}")
+          dont_allow(described_class).sh("git clone -b release-candidate http://github.com/cloudfoundry/cf-release #{cf_release_path}")
           run_bootstrap_command
         end
 
         it 'updates the cf-release' do
-          mock(described_class).sh("cd #{cf_release_path} && ./update")
+          mock(described_class).sh("cd #{cf_release_path} && git submodule foreach --recursive git submodule sync && git submodule update --init --recursive")
           run_bootstrap_command
         end
 
