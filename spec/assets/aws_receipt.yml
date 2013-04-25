@@ -7,7 +7,7 @@ vpc:
   id: vpc-13724979
   domain: cfdev.com
   subnets:
-    bosh: subnet-4bdf6c26
+    bosh: subnet-bosh
     cf: subnet-4bdf6c27
     other: subnet-xxxxxxxx
     services: subnet-80709g

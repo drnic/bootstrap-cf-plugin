@@ -2,12 +2,14 @@ require 'spec_helper'
 
 describe BootstrapCfPlugin::Infrastructure::Aws do
   let!(:temp_dir) { Dir.mktmpdir }
-  let(:cf_release_path) { File.join(Dir.tmpdir, "cf-release") }
+  let(:release_name) { 'cf-release' }
+  let(:cf_release_path) { File.join(Dir.tmpdir, release_name) }
+  let(:manifest_name) { "#{release_name.gsub('-release','')}-aws.yml" }
 
   before do
     any_instance_of(BootstrapCfPlugin::Generator, :director_uuid => "12345-12345-12345")
     stub(described_class).sh
-    stub(described_class).sh("git clone http://github.com/cloudfoundry/cf-release #{cf_release_path}") { clone_release }
+    stub(described_class).sh("git clone -b release-candidate http://github.com/cloudfoundry/#{release_name} #{cf_release_path}") { clone_release }
 
     stub(described_class).cf_release_path { |name| cf_release_path }
 
@@ -27,8 +29,14 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
   describe "deploy_release" do
     subject do
       Dir.chdir(temp_dir) do
-        BootstrapCfPlugin::Infrastructure::Aws.deploy_release "cf-release", "cf-aws.yml", nil, nil
+        BootstrapCfPlugin::Infrastructure::Aws.deploy_release release_name, manifest_name, nil, nil
       end
+    end
+
+    it "all of the subnets inside the generated yml" do
+      subject
+      output = YAML.load_file(File.join(temp_dir, manifest_name))
+      output["properties"]["template_only"]["aws"]["subnet_ids"].should have(2).items
     end
 
     it "does the bosh deploy" do
@@ -37,8 +45,6 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
     end
 
     describe "releases" do
-      let(:cf_release_path) { File.join(Dir.tmpdir, "cf-release") }
-
       context "if release doesn't exist" do
         before do
           mock(described_class).sh("bosh -n releases | grep -v 'bosh-release'") { 0 }
@@ -46,12 +52,12 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
 
         it 'checkouts the cf-release from github when not present' do
           stub(Dir).tmpdir { temp_dir }
-          mock(described_class).sh("git clone -b release-candidate http://github.com/cloudfoundry/cf-release #{cf_release_path}")
+          mock(described_class).sh("git clone -b release-candidate http://github.com/cloudfoundry/cf-release #{cf_release_path}") {clone_release}
           subject
         end
 
         it 'does not checkout the cf-release when present' do
-          FileUtils.mkdir_p(cf_release_path)
+          clone_release
           dont_allow(described_class).sh("git clone -b release-candidate http://github.com/cloudfoundry/cf-release #{cf_release_path}")
           subject
         end
@@ -60,14 +66,15 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
           mock(described_class).sh("cd #{cf_release_path} && git submodule foreach --recursive git submodule sync && git submodule update --init --recursive")
           subject
         end
-
-      it 'updates the cf-release' do
-        mock(described_class).sh("cd #{cf_release_path} && ./update")
-        subject
       end
 
       it 'creates the cf bosh release' do
-        mock(described_class).sh("cd #{cf_release_path} && bosh -n create release --force && bosh -n upload release")
+        mock(described_class).sh("cd #{cf_release_path} && bosh -n create release --force")
+        subject
+      end
+
+      it 'uploads the cf bosh release' do
+        mock(described_class).sh("cd #{cf_release_path} && bosh -n upload release --rebase")
         subject
       end
     end
@@ -90,6 +97,7 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
         subject
       end
     end
+
   end
 
   describe "#upload_stemcell" do
@@ -171,9 +179,14 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
     end
 
     it "deploys release for cf-release and cf-services-release" do
-      mock(described_class).deploy_release("cf-release", "cf-aws.yml", nil, template_file)
-      mock(described_class).deploy_release("cf-services-release", "cf-services-aws.yml", "cf-aws.yml", template_file)
+      mock(described_class).deploy_release("cf-release", "cf-aws.yml", "cf-shared-secrets.yml", template_file)
+      mock(described_class).deploy_release("cf-services-release", "cf-services-aws.yml", "cf-shared-secrets.yml", template_file)
       subject
+    end
+
+    it "creates a shared secret file" do
+      subject
+      File.should be_exists("#{temp_dir}/cf-shared-secrets.yml")
     end
 
     context "with custom template file" do

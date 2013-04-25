@@ -43,8 +43,9 @@ module BootstrapCfPlugin
       @aws_receipt["aws"]["secret_access_key"]
     end
 
-    def to_hash(manifest_name, upstream_manifest)
-      hash = YAML.load ERB.new(File.read(manifest_stub(manifest_name)), 0, "-%<>").result(binding)
+    def to_hash(upstream_manifest)
+      manifest_stub = File.expand_path("../../../templates/cf-aws-stub.yml.erb", __FILE__)
+      hash = YAML.load ERB.new(File.read(manifest_stub)).result(binding)
       hash["properties"].merge!(@rds_receipt["deployment_manifest"]["properties"])
 
       if upstream_manifest
@@ -62,13 +63,9 @@ module BootstrapCfPlugin
       File.expand_path("../../../templates/#{manifest_stub_file}", __FILE__)
     end
 
-    def services_manifest_stub
-      File.expand_path('../../../templates/cf-services-aws-stub.yml.erb', __FILE__)
-    end
-
     def save(manifest_name, upstream_manifest)
       File.open(manifest_name, "w+") do |f|
-        f.write(YAML.dump(to_hash(manifest_name, upstream_manifest)))
+        f.write(YAML.dump(to_hash(upstream_manifest)))
       end
     end
 

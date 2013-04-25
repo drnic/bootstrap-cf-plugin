@@ -11,7 +11,8 @@ command BootstrapCfPlugin::Plugin do
   before do
     stub(BootstrapCfPlugin::DirectorCheck).check
     stub(BootstrapCfPlugin::Infrastructure::Aws).bootstrap
-
+    stub(BootstrapCfPlugin::Infrastructure::Aws).generate_stub
+    stub(BootstrapCfPlugin::SharedSecretsFile).find_or_create
     stub_invoke :logout
     stub_invoke :login, anything
     stub_invoke :target, anything
@@ -144,5 +145,32 @@ command BootstrapCfPlugin::Plugin do
         subject
       end
     end
+  end
+
+  describe "generate_stub" do
+    context "when the infrastructure is AWS" do
+      subject { cf %W[generate-stub aws] }
+
+      describe "verifying access to director" do
+        it "should blow up if unable to get director status" do
+          stub(BootstrapCfPlugin::DirectorCheck).check { raise "some error message" }
+          dont_allow(BootstrapCfPlugin::Infrastructure::Aws).generate_stub
+          expect {
+            subject
+          }.to raise_error "some error message"
+        end
+      end
+
+      it "should invoke SharedSecretsFile.find_or_create" do
+        mock(BootstrapCfPlugin::SharedSecretsFile).find_or_create.with("cf-shared-secrets.yml")
+        subject
+      end
+
+      it "should invoke AWS.generate_stub when infrastructure is AWS" do
+        mock(BootstrapCfPlugin::Infrastructure::Aws).generate_stub.with("cf-aws-stub.yml", "cf-shared-secrets.yml")
+        subject
+      end
+    end
+
   end
 end

@@ -17,7 +17,8 @@ describe BootstrapCfPlugin::Generator do
 
   it "should allow access to all of the subnets" do
     subject.subnet_id('cf').should == 'subnet-4bdf6c27'
-    subject.subnet_id('bosh').should == 'subnet-4bdf6c26'
+    subject.subnet_id('services').should == 'subnet-80709g'
+    subject.subnet_id('bosh').should == 'subnet-bosh'
     subject.subnet_id('other').should == 'subnet-xxxxxxxx'
   end
 
@@ -25,8 +26,8 @@ describe BootstrapCfPlugin::Generator do
     let(:upstream_manifest) { asset "shared_manifest.yml" }
 
     context "when shared manifest is provided" do
+      let(:properties) { subject.to_hash(upstream_manifest)["properties"] }
       it "merges uaa scim users into current manifest" do
-        properties = subject.to_hash("cf-aws.yml", upstream_manifest)["properties"]
         properties.should include({
           "uaa" => {
             "scim" => {
@@ -37,6 +38,12 @@ describe BootstrapCfPlugin::Generator do
             }
           }
         })
+      end
+
+      it 'gets both CF and Services subnets' do
+        manifest_name  = "cf-services-aws.yml"
+        properties =  subject.to_hash(upstream_manifest)["properties"]
+        properties["template_only"]["aws"]["subnet_ids"].should == {"services"=>"subnet-80709g", "cf"=>"subnet-4bdf6c27"}
       end
     end
   end

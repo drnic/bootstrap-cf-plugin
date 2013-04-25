@@ -73,7 +73,8 @@ module BootstrapCfPlugin
       infrastructure_class = lookup_infrastructure_class(infrastructure)
       raise "Unsupported infrastructure #{input[:infrastructure]}" unless infrastructure_class
       DirectorCheck.check
-      infrastructure_class.generate_stub
+      SharedSecretsFile.find_or_create("cf-shared-secrets.yml")
+      infrastructure_class.generate_stub("cf-aws-stub.yml", "cf-shared-secrets.yml")
     end
   end
 end

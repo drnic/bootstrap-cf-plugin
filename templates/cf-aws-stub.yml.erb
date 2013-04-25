@@ -19,6 +19,18 @@ networks:
     gateway: 10.10.2.1
     dns:
     - 10.10.0.2  # amazon has only 1 DNS server for the whole VPC at x.x.0.2
+- name: services
+  type: manual
+  subnets:
+  - range: 10.10.4.0/24
+    name: default_unused
+    reserved:
+    - 10.10.4.2 - 10.10.4.9
+    static:
+    - 10.10.4.10 - 10.10.4.200
+    gateway: 10.10.4.1
+    dns:
+    - 10.10.0.2  # amazon has only 1 DNS server for the whole VPC at x.x.0.2
 
 properties:
   domain: <%= domain %>
@@ -30,3 +42,4 @@ properties:
       availability_zone: <%= availability_zone %>
       subnet_ids:
         cf: <%= subnet_id "cf" %>
+        services: <%= subnet_id "services" %>

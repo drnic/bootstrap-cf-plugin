@@ -5,8 +5,9 @@ module BootstrapCfPlugin
 
       def self.bootstrap(template_file = nil)
         upload_stemcell
-        deploy_release("cf-release", "cf-aws.yml", nil, template_file)
-        deploy_release("cf-services-release", "cf-services-aws.yml", "cf-aws.yml", template_file)
+        SharedSecretsFile.find_or_create("cf-shared-secrets.yml")
+        deploy_release("cf-release", "cf-aws.yml", "cf-shared-secrets.yml", template_file)
+        deploy_release("cf-services-release", "cf-services-aws.yml", "cf-shared-secrets.yml", template_file)
 
         puts "INFO: bootstrap complete"
         sh("bosh -n status")
@@ -17,15 +18,15 @@ module BootstrapCfPlugin
         git_url = "http://github.com/cloudfoundry/#{release_name}"
 
         puts("Creating release #{release_name}")
-        puts "git clone #{git_url} #{cf_release_path}"
+        puts "git clone -b release-candidate #{git_url} #{cf_release_path}"
 
-        sh("git clone #{git_url} #{cf_release_path}") unless Dir.exist?(cf_release_path)
+        sh("git clone -b release-candidate #{git_url} #{cf_release_path}") unless Dir.exist?(cf_release_path)
         dev_config_path = File.join(cf_release_path, "config", "dev.yml")
         unless File.exists?(dev_config_path)
           File.open(dev_config_path, "w") { |f| f.write("---\ndev_name: #{release_name}") }
         end
-        sh("cd #{cf_release_path} && ./update")
-        sh("cd #{cf_release_path} && bosh -n create release --force && bosh -n upload release")
+
+        prepare_release(cf_release_path)
 
         puts("Creating deployment manifest #{manifest_name}")
         generate_stub(manifest_name, upstream_manifest)
@@ -49,6 +50,17 @@ module BootstrapCfPlugin
         end
       end
 
+      def self.prepare_release(cf_release_path)
+        sh("cd #{cf_release_path} && ./update")
+        sh("cd #{cf_release_path} && bosh -n create release --force")
+        begin
+          sh("cd #{cf_release_path} && bosh -n upload release --rebase")
+        rescue RuntimeError => e
+          raise e unless e.message =~ /upload release/
+          puts("Using existing release")
+        end
+      end
+
       def self.upload_stemcell
         begin
           unless ENV.has_key? "BOSH_OVERRIDE_LIGHT_STEMCELL_URL"
@@ -65,7 +77,7 @@ module BootstrapCfPlugin
         end
       end
 
-      def self.generate_stub(manifest_name, upstream_manifest)
+      def self.generate_stub(manifest_name = "cf-aws.yml", upstream_manifest = nil)
         generator.save(manifest_name, upstream_manifest)
       end
 

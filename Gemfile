@@ -8,4 +8,5 @@ group :test do
   gem "rspec"
   gem "fakefs"
   gem "rr"
+  gem "debugger"
 end
