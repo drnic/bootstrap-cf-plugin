@@ -19,8 +19,7 @@ module BootstrapCfPlugin
     end
 
     def director_uuid
-      bosh_target = YAML.load_file(File.join(ENV["HOME"], ".bosh_config"))["target"]
-      YAML.load(Net::HTTP.get(URI.parse("#{bosh_target}/info")))["uuid"]
+      YAML.load_file(File.join(ENV["HOME"], ".bosh_config"))["target_uuid"] || raise("Cannot get UUID from BOSH director, make sure you've targeted and logged in")
     end
 
     def micro_ip
