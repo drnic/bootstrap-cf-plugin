@@ -37,17 +37,6 @@ module BootstrapCfPlugin
 
         puts("Running bosh deploy...")
         sh("bosh -n deploy")
-        begin
-          puts("Checking for release...")
-          sh("bosh -n releases | grep -v 'bosh-release'")
-          puts("Missing release, creating...")
-          sh("git clone -b release-candidate http://github.com/cloudfoundry/cf-release #{cf_release_path}") unless Dir.exist?(cf_release_path)
-          sh("cd #{cf_release_path} && git submodule foreach --recursive git submodule sync && git submodule update --init --recursive")
-          sh("cd #{cf_release_path} && bosh -n create release --force && bosh -n upload release")
-        rescue Exception => e
-          raise e unless e.message =~ /releases/
-          puts("Using found release")
-        end
       end
 
       def self.prepare_release(cf_release_path)
