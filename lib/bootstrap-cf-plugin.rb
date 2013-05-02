@@ -1,6 +1,5 @@
 require "erb"
 require "cf"
-require "haddock"
 require "common/version"
 require "bootstrap-cf-plugin/generator"
 require "bootstrap-cf-plugin/plugin"

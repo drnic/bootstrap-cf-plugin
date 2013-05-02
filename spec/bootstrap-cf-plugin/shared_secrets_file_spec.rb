@@ -29,4 +29,10 @@ describe BootstrapCfPlugin::SharedSecretsFile do
       end
     end
   end
+
+  describe "#random_string" do
+    it "should create a 12 character random string" do
+      BootstrapCfPlugin::SharedSecretsFile.random_string.length.should == 12
+    end
+  end
 end

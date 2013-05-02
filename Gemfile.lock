@@ -5,7 +5,6 @@ PATH
       admin-cf-plugin (~> 0.2)
       bosh_cli_plugin_aws (~> 1.5.0.pre.3)
       cf (~> 0.6)
-      haddock
 
 GEM
   remote: https://rubygems.org/
@@ -130,7 +129,6 @@ GEM
       nokogiri (~> 1.5.0)
       ruby-hmac
     formatador (0.2.4)
-    haddock (0.2.2)
     highline (1.6.18)
     httpclient (2.2.4)
     interact (0.5.2)
