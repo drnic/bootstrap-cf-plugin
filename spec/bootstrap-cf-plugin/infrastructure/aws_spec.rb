@@ -45,28 +45,16 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
     end
 
     describe "releases" do
-      context "if release doesn't exist" do
-        before do
-          mock(described_class).sh("bosh -n releases | grep -v 'bosh-release'") { 0 }
-        end
-
         it 'checkouts the cf-release from github when not present' do
           stub(Dir).tmpdir { temp_dir }
           mock(described_class).sh("git clone -b release-candidate http://github.com/cloudfoundry/cf-release #{cf_release_path}") {clone_release}
           subject
         end
 
-        it 'does not checkout the cf-release when present' do
-          clone_release
-          dont_allow(described_class).sh("git clone -b release-candidate http://github.com/cloudfoundry/cf-release #{cf_release_path}")
-          subject
-        end
-
         it 'updates the cf-release' do
-          mock(described_class).sh("cd #{cf_release_path} && git submodule foreach --recursive git submodule sync && git submodule update --init --recursive")
+          mock(described_class).sh("cd #{cf_release_path} && ./update")
           subject
         end
-      end
 
       it 'creates the cf bosh release' do
         mock(described_class).sh("cd #{cf_release_path} && bosh -n create release --force")
@@ -107,6 +95,9 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
       end
     end
 
+    let(:stemcell_file) { "last_successful_bosh-stemcell-aws_light.tgz" }
+    let(:bucket_url) { "http://bosh-jenkins-artifacts.s3.amazonaws.com" }
+
     context "if no stemcell URL override is set in the environment" do
       context "if the stemcell doesn't exist" do
         before do
@@ -114,12 +105,12 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
         end
 
         it 'downloads the latest stemcell from S3' do
-          mock(described_class).sh("cd /tmp && rm -f last_successful_bosh-stemcell_light.tgz && wget 'http://bosh-jenkins-artifacts.s3.amazonaws.com/last_successful_bosh-stemcell_light.tgz' --no-check-certificate")
+          mock(described_class).sh("cd /tmp && rm -f #{stemcell_file} && wget '#{bucket_url}/#{stemcell_file}' --no-check-certificate")
           subject
         end
 
         it 'uploads the lastest stemcell' do
-          mock(described_class).sh("bosh -n upload stemcell /tmp/last_successful_bosh-stemcell_light.tgz")
+          mock(described_class).sh("bosh -n upload stemcell /tmp/#{stemcell_file}")
           subject
         end
       end
@@ -132,12 +123,12 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
         end
 
         it 'skips downloading the stemcell from S3' do
-          dont_allow(described_class).sh("cd /tmp && rm -f last_successful_bosh-stemcell_light.tgz && wget 'http://bosh-jenkins-artifacts.s3.amazonaws.com/last_successful_bosh-stemcell_light.tgz' --no-check-certificate")
+          dont_allow(described_class).sh("cd /tmp && rm -f #{stemcell_file} && wget '#{bucket_url}/#{stemcell_file}' --no-check-certificate")
           subject
         end
 
         it 'skips uploading the stemcell' do
-          dont_allow(described_class).sh("bosh -n upload stemcell /tmp/last_successful_bosh-stemcell_light.tgz")
+          dont_allow(described_class).sh("bosh -n upload stemcell /tmp/#{stemcell_file}")
           subject
         end
       end
