@@ -1,9 +1,11 @@
-require "securerandom"
+require "haddock"
 
 module BootstrapCfPlugin
   class SharedSecretsFile
+    PASSWORD_LENGTH = 18
     def self.random_string
-      SecureRandom.hex(6)
+      Haddock::Password.delimiters = %q#`~!@$%^&*()-_=+[{]}\;:'",<.>/?#
+      Haddock::Password.generate(PASSWORD_LENGTH)
     end
 
     def self.find_or_create(filename)
