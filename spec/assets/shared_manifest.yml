@@ -1,7 +1,14 @@
 ---
 properties:
   uaa:
+    cc:
+      client_secret: the-cc-client-secret
     scim:
       users:
       - admin|random1passwd|scim.write,scim.read,openid,cloud_controller.admin
       - service|other4psword|scim.write,scim.read,openid,cloud_controller.admin
+
+  syslog_aggregator:
+    log_email:
+      from_email: the-syslog-from-email
+      from_password: the-syslog-from-password

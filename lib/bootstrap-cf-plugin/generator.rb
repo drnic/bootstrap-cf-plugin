@@ -42,21 +42,6 @@ module BootstrapCfPlugin
       @aws_receipt["aws"]["secret_access_key"]
     end
 
-    def to_hash(upstream_manifest)
-      manifest_stub = File.expand_path("../../../templates/cf-aws-stub.yml.erb", __FILE__)
-      hash = YAML.load ERB.new(File.read(manifest_stub)).result(binding)
-      hash["properties"].merge!(@rds_receipt["deployment_manifest"]["properties"])
-
-      if upstream_manifest
-        hash["properties"].merge!(shared_properties(upstream_manifest))
-      end
-
-      # this is a hack until the ccdb_ng yaml reference is removed from the vpc template
-      # (the yaml marshalling will generate a ccdb_ng: *ccdb line)
-      hash["properties"]["ccdb_ng"] = hash["properties"]["ccdb"]
-      hash
-    end
-
     def manifest_stub(manifest_name)
       manifest_stub_file = manifest_name.gsub(/(.*)\.yml$/, '\1-stub.yml.erb')
       File.expand_path("../../../templates/#{manifest_stub_file}", __FILE__)
@@ -70,18 +55,19 @@ module BootstrapCfPlugin
 
     private
 
-    def shared_properties(shared_manifest)
-      upstream_properties = load_yaml_file(shared_manifest)
-      return {} unless upstream_properties["properties"] &&
-        upstream_properties["properties"]["uaa"] &&
-        upstream_properties["properties"]["uaa"]["scim"]
-      {
-        "uaa"=> {
-          "scim"=> {
-            "users"=> upstream_properties["properties"]["uaa"]["scim"]["users"]
-          }
-        }
-      }
+    def to_hash(upstream_manifest)
+      manifest_stub = File.expand_path("../../../templates/cf-aws-stub.yml.erb", __FILE__)
+      hash = YAML.load ERB.new(File.read(manifest_stub)).result(binding)
+      hash["properties"].merge!(@rds_receipt["deployment_manifest"]["properties"])
+
+      if upstream_manifest
+        hash["properties"].merge!(load_yaml_file(upstream_manifest)["properties"])
+      end
+
+      # this is a hack until the ccdb_ng yaml reference is removed from the vpc template
+      # (the yaml marshalling will generate a ccdb_ng: *ccdb line)
+      hash["properties"]["ccdb_ng"] = hash["properties"]["ccdb"]
+      hash
     end
   end
 end

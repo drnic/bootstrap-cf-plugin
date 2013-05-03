@@ -7,51 +7,58 @@ describe BootstrapCfPlugin::Generator do
     BootstrapCfPlugin::Generator.new(aws_receipt_file, rds_receipt_file)
   end
 
-  it "should generate the expected YAML output" do
-    mock(subject).director_uuid { "12345-12345-12345" }
-    Dir.chdir("/tmp") do
-      subject.save('cf-aws.yml', nil)
-      YAML.load_file('cf-aws.yml').should == YAML.load_file(asset 'expected_cf_stub.yml')
+  describe "#save" do
+    let(:generated_manifest) do
+      Dir.chdir("/tmp") do
+        subject.save('cf-aws.yml', upstream_manifest)
+        YAML.load_file('cf-aws.yml')
+      end
     end
-  end
 
-  it "should allow access to all of the subnets" do
-    subject.subnet_id('cf1').should == 'subnet-4bdf6c27'
-    subject.subnet_id('bosh1').should == 'subnet-4bdf6c26'
-    subject.subnet_id('other').should == 'subnet-xxxxxxxx'
-  end
+    context "when no upstream manifest is provided" do
+      let(:upstream_manifest) { nil }
 
-  describe "to_hash" do
-    let(:upstream_manifest) { asset "shared_manifest.yml" }
-
-    context "when shared manifest is provided" do
-      let(:properties) { subject.to_hash(upstream_manifest)["properties"] }
-      it "merges uaa scim users into current manifest" do
-        properties.should include({
-          "uaa" => {
-            "scim" => {
-              "users" => [
-                "admin|random1passwd|scim.write,scim.read,openid,cloud_controller.admin",
-                "service|other4psword|scim.write,scim.read,openid,cloud_controller.admin"
-              ]
-            }
-          }
-        })
+      it "generates the expected YAML output" do
+        mock(subject).director_uuid { "12345-12345-12345" }
+        generated_manifest.should == YAML.load_file(asset 'expected_cf_stub.yml')
       end
 
       it 'gets both CF and Services subnets' do
-        manifest_name  = "cf-services-aws.yml"
-        properties =  subject.to_hash(upstream_manifest)["properties"]
-        properties["template_only"]["aws"]["subnet_ids"].should == {"services1"=>"subnet-80709g", "cf1"=>"subnet-4bdf6c27"}
+        generated_manifest["properties"]["template_only"]["aws"]["subnet_ids"].should == {
+          "services1"=>"subnet-80709g",
+          "cf1"=>"subnet-4bdf6c27"
+        }
       end
     end
+
+    context "when an upstream manifest is provided" do
+      let(:upstream_manifest) { asset "shared_manifest.yml" }
+
+      it "includes properties from that manifest" do
+        mock(subject).director_uuid { "12345-12345-12345" }
+        generated_manifest.should == YAML.load_file(asset 'expected_cf_stub_with_secrets.yml')
+      end
+
+      it 'gets both CF and Services subnets' do
+        generated_manifest["properties"]["template_only"]["aws"]["subnet_ids"].should == {
+          "services1"=>"subnet-80709g",
+          "cf1"=>"subnet-4bdf6c27"
+        }
+      end
+    end
+  end
+
+  it "allows access to all of the subnets" do
+    subject.subnet_id('cf1').should == 'subnet-4bdf6c27'
+    subject.subnet_id('bosh1').should == 'subnet-4bdf6c26'
+    subject.subnet_id('other').should == 'subnet-xxxxxxxx'
   end
 
   describe "manifest_stub" do
     let(:manifest_name) { "some-manifest.yml"}
 
     it "sets the stub name" do
-      subject.manifest_stub(manifest_name).should match /templates\/some-manifest-stub.yml.erb$/
+      subject.manifest_stub(manifest_name).should match(/templates\/some-manifest-stub.yml.erb$/)
     end
   end
 end
