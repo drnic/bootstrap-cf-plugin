@@ -15,11 +15,14 @@ describe BootstrapCfPlugin::Generator do
       end
     end
 
+    before do
+      mock(subject).director_uuid { "12345-12345-12345" }
+    end
+
     context "when no upstream manifest is provided" do
       let(:upstream_manifest) { nil }
 
       it "generates the expected YAML output" do
-        mock(subject).director_uuid { "12345-12345-12345" }
         generated_manifest.should == YAML.load_file(asset 'expected_cf_stub.yml')
       end
 
@@ -35,7 +38,6 @@ describe BootstrapCfPlugin::Generator do
       let(:upstream_manifest) { asset "shared_manifest.yml" }
 
       it "includes properties from that manifest" do
-        mock(subject).director_uuid { "12345-12345-12345" }
         generated_manifest.should == YAML.load_file(asset 'expected_cf_stub_with_secrets.yml')
       end
 
