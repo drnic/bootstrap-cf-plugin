@@ -1,6 +1,7 @@
 require "bootstrap-cf-plugin"
 require "cfoundry/test_support"
 require "cf/test_support"
+require "haddock"
 
 def asset(filename)
   File.expand_path("../assets/#{filename}", __FILE__)
@@ -24,3 +25,5 @@ RSpec.configure do |c|
   c.include InteractHelper
   c.include ConfigHelper
 end
+
+Haddock::Password.diction = File.expand_path("../assets/words.txt", __FILE__)
