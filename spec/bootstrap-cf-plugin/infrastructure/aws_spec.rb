@@ -4,7 +4,7 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
   let!(:temp_dir) { Dir.mktmpdir }
   let(:release_name) { 'cf-release' }
   let(:cf_release_path) { File.join(Dir.tmpdir, release_name) }
-  let(:manifest_name) { "#{release_name.gsub('-release','')}-aws.yml" }
+  let(:manifest_name) { "#{release_name.gsub('-release', '')}-aws.yml" }
 
   before do
     any_instance_of(BootstrapCfPlugin::Generator, :director_uuid => "12345-12345-12345")
@@ -45,16 +45,16 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
     end
 
     describe "releases" do
-        it 'checkouts the cf-release from github when not present' do
-          stub(Dir).tmpdir { temp_dir }
-          mock(described_class).sh("git clone -b release-candidate http://github.com/cloudfoundry/cf-release #{cf_release_path}") {clone_release}
-          subject
-        end
+      it 'checkouts the cf-release from github when not present' do
+        stub(Dir).tmpdir { temp_dir }
+        mock(described_class).sh("git clone -b release-candidate http://github.com/cloudfoundry/cf-release #{cf_release_path}") { clone_release }
+        subject
+      end
 
-        it 'updates the cf-release' do
-          mock(described_class).update_release(cf_release_path)
-          subject
-        end
+      it 'updates the cf-release' do
+        mock(described_class).update_release(cf_release_path)
+        subject
+      end
 
       it 'creates the cf bosh release' do
         mock(described_class).sh("cd #{cf_release_path} && bosh -n create release --force")
@@ -64,6 +64,14 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
       it 'uploads the cf bosh release' do
         mock(described_class).sh("cd #{cf_release_path} && bosh -n upload release --rebase")
         subject
+      end
+
+      it 'continues if there are no job and package changes' do
+        command = "cd #{cf_release_path} && bosh -n upload release --rebase"
+        error = 'Error 100: Rebase is attempted without any job or package changes'
+
+        mock(described_class).sh(command) { raise RuntimeError.new(error) }
+        expect { subject }.not_to raise_error
       end
     end
 

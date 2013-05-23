@@ -49,8 +49,7 @@ module BootstrapCfPlugin
         begin
           sh("cd #{path} && bosh -n upload release --rebase")
         rescue RuntimeError => e
-          raise e unless e.message =~ /upload release/
-          puts("Using existing release")
+          check_release_error e
         end
       end
 
@@ -75,6 +74,7 @@ module BootstrapCfPlugin
       end
 
       private
+
       def self.cf_release_path(release_name)
         File.join(Dir.tmpdir, release_name)
       end
@@ -90,6 +90,18 @@ module BootstrapCfPlugin
       def self.generator
         @generator ||= BootstrapCfPlugin::Generator.new("aws_vpc_receipt.yml", "aws_rds_receipt.yml")
       end
+
+      def self.check_release_error(e)
+        case e.message
+          when /upload release/
+            puts 'Using existing release'
+          when /Rebase is attempted without any job or package changes/
+            puts 'Skipping upload release. No job or package changes'
+          else
+            raise
+        end
+      end
+
     end
   end
 end
