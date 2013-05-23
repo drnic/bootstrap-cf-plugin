@@ -39,8 +39,12 @@ module BootstrapCfPlugin
         sh("bosh -n deploy")
       end
 
-      def self.prepare_release(cf_release_path)
+      def self.update_release
         sh("cd #{cf_release_path} && ./update")
+      end
+
+      def self.prepare_release(cf_release_path)
+        update_release
         sh("cd #{cf_release_path} && bosh -n create release --force")
         begin
           sh("cd #{cf_release_path} && bosh -n upload release --rebase")
