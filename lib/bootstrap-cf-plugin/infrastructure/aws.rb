@@ -39,15 +39,15 @@ module BootstrapCfPlugin
         sh("bosh -n deploy")
       end
 
-      def self.update_release
-        sh("cd #{cf_release_path} && ./update")
+      def self.update_release(path)
+        sh "cd #{path} && ./update"
       end
 
-      def self.prepare_release(cf_release_path)
-        update_release
-        sh("cd #{cf_release_path} && bosh -n create release --force")
+      def self.prepare_release(path)
+        update_release path
+        sh("cd #{path} && bosh -n create release --force")
         begin
-          sh("cd #{cf_release_path} && bosh -n upload release --rebase")
+          sh("cd #{path} && bosh -n upload release --rebase")
         rescue RuntimeError => e
           raise e unless e.message =~ /upload release/
           puts("Using existing release")

@@ -52,7 +52,7 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
         end
 
         it 'updates the cf-release' do
-          mock(described_class).update_release
+          mock(described_class).update_release(cf_release_path)
           subject
         end
 
