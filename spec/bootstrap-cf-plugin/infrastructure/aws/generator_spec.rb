@@ -1,10 +1,11 @@
 require 'spec_helper'
+require "bootstrap-cf-plugin/infrastructure/aws/generator"
 
-describe BootstrapCfPlugin::Generator do
+describe BootstrapCfPlugin::Infrastructure::Aws::Generator do
   let(:aws_receipt_file) { asset 'aws_receipt.yml' }
   let(:rds_receipt_file) { asset 'rds_receipt.yml' }
   subject do
-    BootstrapCfPlugin::Generator.new(aws_receipt_file, rds_receipt_file)
+    BootstrapCfPlugin::Infrastructure::Aws::Generator.new(aws_receipt_file, rds_receipt_file)
   end
 
   describe "#save" do

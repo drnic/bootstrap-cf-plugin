@@ -7,7 +7,7 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
   let(:manifest_name) { "#{release_name.gsub('-release', '')}-aws.yml" }
 
   before do
-    any_instance_of(BootstrapCfPlugin::Generator, :director_uuid => "12345-12345-12345")
+    any_instance_of(BootstrapCfPlugin::Infrastructure::Aws::Generator, :director_uuid => "12345-12345-12345")
     stub(described_class).sh
     stub(described_class).sh("git clone -b release-candidate http://github.com/cloudfoundry/#{release_name} #{cf_release_path}") { clone_release }
 
