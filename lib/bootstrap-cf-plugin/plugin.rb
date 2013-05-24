@@ -2,12 +2,6 @@ require "bootstrap-cf-plugin"
 
 module BootstrapCfPlugin
   class Plugin < CF::CLI
-    STATIC_TOKENS = [
-      {provider: 'sendgrid-dev', label: 'smtp', token: 'ad_smtp_sendgriddev_token'},
-      {provider: 'mongolab-dev', label: 'mongodb', token: 'ad_mongodb_mongolabdev_token'},
-      {provider: 'redistogo-dev', label: 'redis', token: 'ad_redis_redistogodev_token'}
-    ]
-
     def precondition
       # skip all default preconditions
     end
@@ -41,6 +35,7 @@ module BootstrapCfPlugin
       infrastructure_class.bootstrap(input[:template])
 
       cf_aws_manifest = load_yaml_file("cf-aws.yml")
+      cf_aws_services_manifest = load_yaml_file("cf-services-aws.yml")
       cf_properties = cf_aws_manifest.fetch('properties')
       uaa_users = cf_properties.fetch('uaa').fetch('scim').fetch('users')
 
@@ -51,19 +46,22 @@ module BootstrapCfPlugin
 
       invoke :login, :username => uaa_user[0], :password => uaa_user[1]
 
-      invoke :create_org, :name => 'bootstrap-org'
+      org = find_or_create_org("bootstrap-org")
 
-      org = client.organization_by_name("bootstrap-org")
-      invoke :create_space, :organization => org, :name => "bootstrap-space"
-
-      space = client.space_by_name("bootstrap-space")
+      space = find_or_create_space(org, "bootstrap-space")
       invoke :target, :url => cf_properties.fetch('cc').fetch('srv_api_uri'), :organization => org, :space => space
 
       # invoke a bunch of create-service-token commands
-      (tokens_from_jobs(cf_aws_manifest.fetch('jobs', [])) + STATIC_TOKENS).each do |gateway_info|
-        invoke :create_service_auth_token, gateway_info
+      (tokens_from_jobs(cf_aws_services_manifest.fetch('jobs', []))).each do |gateway_info|
+        begin
+          invoke :create_service_auth_token, gateway_info
+        rescue CFoundry::ServiceAuthTokenLabelTaken => e
+          puts "  Don't worry, service token already installed, continuing"
+        end
       end
+      puts "All done with bootstrap!"
     end
+
 
     desc "Generate a manifest stub"
     group :admin
@@ -75,6 +73,28 @@ module BootstrapCfPlugin
       DirectorCheck.check
       SharedSecretsFile.find_or_create("cf-shared-secrets.yml")
       infrastructure_class.generate_stub("cf-aws-stub.yml", "cf-shared-secrets.yml")
+    end
+
+    private
+
+    def find_or_create_org(name)
+      org = client.organization_by_name(name)
+
+      unless org
+        invoke :create_org, :name => name
+        org = client.organization_by_name(name)
+      end
+      org
+    end
+
+    def find_or_create_space(org, name)
+      space = client.space_by_name(name)
+
+      unless space
+        invoke :create_space, :organization => org, :name => name
+        space = client.space_by_name(org)
+      end
+      space
     end
   end
 end

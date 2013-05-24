@@ -6,7 +6,8 @@ command BootstrapCfPlugin::Plugin do
   let(:mysql_token) { 'mysql-secret' }
   let(:postgresql_token) { 'postgresql-secret' }
   let(:smtp_token) { 'ad_smtp_sendgriddev_token' }
-
+  let(:bootstrap_org) { fake :organization, :name => "bootstrap-org" }
+  let(:bootstrap_space) { fake :space, :name => "bootstrap-space" }
 
   before do
     stub(BootstrapCfPlugin::DirectorCheck).check
@@ -22,7 +23,7 @@ command BootstrapCfPlugin::Plugin do
   end
 
 
-  def manifest_hash
+  def services_manifest_hash
     {
       "jobs" => [
         {
@@ -44,6 +45,20 @@ command BootstrapCfPlugin::Plugin do
         }
       ],
         "properties" => {
+        'uaa' => {
+          'scim' => {
+            'users' => ["user|da_password"]
+          }
+        }
+      }
+    }
+  end
+
+  def manifest_hash
+    {
+      "jobs" => [
+      ],
+        "properties" => {
         "cc" => {
           "srv_api_uri" => "http://example.com"
         },
@@ -60,6 +75,10 @@ command BootstrapCfPlugin::Plugin do
     Dir.chdir(Dir.mktmpdir) do
       File.open("cf-aws.yml", "w") do |w|
         w.write(YAML.dump(manifest_hash))
+      end
+
+      File.open("cf-services-aws.yml", "w") do |w|
+        w.write(YAML.dump(services_manifest_hash))
       end
 
       example.run
@@ -110,16 +129,54 @@ command BootstrapCfPlugin::Plugin do
       subject
     end
 
-    it 'CF creates an Organization and a Space' do
-      mock_invoke :create_org, :name => "bootstrap-org"
-      subject
+    context "when the organization does not exist" do
+      it 'CF creates an Organization' do
+        mock_invoke :create_org, :name => "bootstrap-org"
+        subject
+      end
+
+      it "creates a space" do
+        mock_invoke :create_space, hash_including(name: "bootstrap-space")
+        subject
+      end
+    end
+
+    context "when the organization already exists" do
+      let!(:client) { fake_client :organizations => [bootstrap_org] }
+
+      it "does not create it again" do
+        dont_allow_invoke :create_org, anything
+        subject
+      end
+
+      context "when the space does not exist" do
+        it "creates a space inside the existing org" do
+          mock_invoke :create_space, :organization => bootstrap_org, :name => "bootstrap-space"
+          subject
+        end
+      end
+
+      context "when the space already exists" do
+        let!(:client) { fake_client :organizations => [bootstrap_org], :spaces => [bootstrap_space] }
+
+        it "does not create it again" do
+          dont_allow_invoke :create_space, anything
+          subject
+        end
+      end
     end
 
     it "invokes create-service-token for each service" do
       mock_invoke :create_service_auth_token, :label => 'mongodb', :provider => 'core', :token => mongodb_token
       mock_invoke :create_service_auth_token, :label => 'mysql', :provider => 'core', :token => mysql_token
       mock_invoke :create_service_auth_token, :label => 'postgresql', :provider => 'core', :token => postgresql_token
-      mock_invoke :create_service_auth_token, :label => 'smtp', :provider => 'sendgrid-dev', :token => smtp_token
+      subject
+    end
+
+    it "ignores services tokens that already exist" do
+      any_instance_of described_class do |cli|
+        mock(cli).invoke(:create_service_auth_token, anything) { raise CFoundry::ServiceAuthTokenLabelTaken }
+      end
       subject
     end
 
@@ -128,10 +185,6 @@ command BootstrapCfPlugin::Plugin do
 
       let(:bootstrap_org) { fake :organization, :name => "bootstrap-org" }
 
-      it 'CF creates a Space' do
-        mock_invoke :create_space, :organization => bootstrap_org, :name => "bootstrap-space"
-        subject
-      end
     end
 
     context "when the org and space were created" do
