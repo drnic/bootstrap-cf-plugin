@@ -13,8 +13,8 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
 
     stub(described_class).cf_release_path { |name| cf_release_path }
 
-    FileUtils.cp asset("aws_receipt.yml"), File.join(temp_dir, "aws_vpc_receipt.yml")
-    FileUtils.cp asset("rds_receipt.yml"), File.join(temp_dir, "aws_rds_receipt.yml")
+    FileUtils.cp asset("aws/aws_receipt.yml"), File.join(temp_dir, "aws_vpc_receipt.yml")
+    FileUtils.cp asset("aws/rds_receipt.yml"), File.join(temp_dir, "aws_rds_receipt.yml")
   end
 
   after do
