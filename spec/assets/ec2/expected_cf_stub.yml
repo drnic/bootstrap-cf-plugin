@@ -1,0 +1,47 @@
+---
+name: cf-somename
+director_uuid: 12345-12345-12345
+releases:
+- name: cf-release
+  version: latest
+
+networks:
+- name: default
+  type: dynamic
+  cloud_properties: 
+    security_groups: 
+    - cloudfoundry-production
+
+- name: vip_network
+  type: vip
+  cloud_properties: 
+    security_groups: 
+    - cloudfoundry-production
+
+properties:
+  domain: cfdev.com
+
+  template_only:
+    aws:
+      access_key_id: ...
+      secret_access_key: ...
+      availability_zone: us-east-1d
+  ccdb: &ccdb
+    db_scheme: mysql
+    roles:
+    - tag: admin
+      name: ccdb_user
+      password: ccdb_password
+    databases:
+    - tag: cc
+      name: ccdb
+  uaadb:
+    db_scheme: mysql
+    roles:
+    - tag: admin
+      name: uaa_user
+      password: uaa_password
+    databases:
+    - tag: uaa
+      name: uaadb
+  ccdb_ng: *ccdb

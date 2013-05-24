@@ -1,0 +1,28 @@
+---
+name: cf-<%= name %>
+director_uuid: <%= director_uuid %>
+releases:
+- name: cf-release
+  version: latest
+
+networks:
+- name: default
+  type: dynamic
+  cloud_properties: 
+    security_groups: 
+    - cloudfoundry-production
+
+- name: vip_network
+  type: vip
+  cloud_properties: 
+    security_groups: 
+    - cloudfoundry-production
+
+properties:
+  domain: <%= domain %>
+
+  template_only:
+    aws:
+      access_key_id: <%= aws_access_key_id %>
+      secret_access_key: <%= aws_secret_access_key %>
+      availability_zone: <%= availability_zone %>

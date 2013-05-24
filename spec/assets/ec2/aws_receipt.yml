@@ -1,0 +1,18 @@
+---
+aws:
+  access_key_id: ...
+  secret_access_key: ...
+  region: us-east-1
+domain: cfdev.com
+elastic_ips:
+ router:
+  dns_record: "*"
+  ips:
+  - 107.23.46.162
+key_pairs:
+- somenamez
+
+original_configuration:
+  name: somename
+  aws:
+    availability_zone: us-east-1d
