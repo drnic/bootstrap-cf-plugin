@@ -1,21 +1,21 @@
 require 'spec_helper'
 
-require "bootstrap-cf-plugin/infrastructure/aws/generator"
-describe BootstrapCfPlugin::Infrastructure::Aws do
+require "bootstrap-cf-plugin/infrastructure/ec2/generator"
+describe BootstrapCfPlugin::Infrastructure::Ec2 do
   let!(:temp_dir) { Dir.mktmpdir }
   let(:release_name) { 'cf-release' }
   let(:cf_release_path) { File.join(Dir.tmpdir, release_name) }
-  let(:manifest_name) { "#{release_name.gsub('-release', '')}-aws.yml" }
+  let(:manifest_name) { "#{release_name.gsub('-release', '')}-ec2.yml" }
 
   before do
-    any_instance_of(BootstrapCfPlugin::Infrastructure::Aws::Generator, :director_uuid => "12345-12345-12345")
+    any_instance_of(BootstrapCfPlugin::Infrastructure::Ec2::Generator, :director_uuid => "12345-12345-12345")
     stub(described_class).sh
     stub(described_class).sh("git clone -b release-candidate http://github.com/cloudfoundry/#{release_name} #{cf_release_path}") { clone_release }
 
     stub(described_class).cf_release_path { |name| cf_release_path }
 
-    FileUtils.cp asset("aws/aws_receipt.yml"), File.join(temp_dir, "aws_vpc_receipt.yml")
-    FileUtils.cp asset("aws/rds_receipt.yml"), File.join(temp_dir, "aws_rds_receipt.yml")
+    FileUtils.cp asset("ec2/aws_receipt.yml"), File.join(temp_dir, "aws_ec2_receipt.yml")
+    FileUtils.cp asset("ec2/rds_receipt.yml"), File.join(temp_dir, "aws_rds_receipt.yml")
   end
 
   after do
@@ -30,14 +30,8 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
   describe "deploy_release" do
     subject do
       Dir.chdir(temp_dir) do
-        BootstrapCfPlugin::Infrastructure::Aws.deploy_release release_name, manifest_name, nil, nil
+        BootstrapCfPlugin::Infrastructure::Ec2.deploy_release release_name, manifest_name, nil, nil
       end
-    end
-
-    it "all of the subnets inside the generated yml" do
-      subject
-      output = YAML.load_file(File.join(temp_dir, manifest_name))
-      output["properties"]["template_only"]["aws"]["subnet_ids"].should have(2).items
     end
 
     it "does the bosh deploy" do
@@ -77,20 +71,20 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
     end
 
     describe "deployments" do
-      it 'generates the manifest file - cf-aws.yml' do
-        File.should exist(File.join(temp_dir, "aws_vpc_receipt.yml"))
+      it 'generates the manifest file - cf-ec2.yml' do
+        File.should exist(File.join(temp_dir, "aws_ec2_receipt.yml"))
         subject
-        File.should exist(File.join(temp_dir, "cf-aws.yml"))
+        File.should exist(File.join(temp_dir, "cf-ec2.yml"))
       end
 
       it 'applies the template to the manifest file with bosh diff' do
-        aws_template = File.join(Dir.tmpdir, "cf-release", "templates", "cf-aws-template.yml.erb")
+        aws_template = File.join(Dir.tmpdir, "cf-release", "templates", "cf-ec2-template.yml.erb")
         mock(described_class).sh("bosh -n diff #{aws_template}")
         subject
       end
 
       it 'sets the bosh deployment' do
-        mock(described_class).sh('bosh -n deployment cf-aws.yml')
+        mock(described_class).sh('bosh -n deployment cf-ec2.yml')
         subject
       end
     end
@@ -100,7 +94,7 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
   describe "#upload_stemcell" do
     subject do
       Dir.chdir(temp_dir) do
-        BootstrapCfPlugin::Infrastructure::Aws.upload_stemcell
+        BootstrapCfPlugin::Infrastructure::Ec2.upload_stemcell
       end
     end
 
@@ -169,7 +163,7 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
 
     subject do
       Dir.chdir(temp_dir) do
-        BootstrapCfPlugin::Infrastructure::Aws.bootstrap template_file
+        BootstrapCfPlugin::Infrastructure::Ec2.bootstrap template_file
       end
     end
 
@@ -179,8 +173,8 @@ describe BootstrapCfPlugin::Infrastructure::Aws do
     end
 
     it "deploys release for cf-release and cf-services-release" do
-      mock(described_class).deploy_release("cf-release", "cf-aws.yml", "cf-shared-secrets.yml", template_file)
-      mock(described_class).deploy_release("cf-services-release", "cf-services-aws.yml", "cf-shared-secrets.yml", template_file)
+      mock(described_class).deploy_release("cf-release", "cf-ec2.yml", "cf-shared-secrets.yml", template_file)
+      mock(described_class).deploy_release("cf-services-release", "cf-services-ec2.yml", "cf-shared-secrets.yml", template_file)
       subject
     end
 
